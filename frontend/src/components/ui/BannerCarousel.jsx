@@ -17,8 +17,8 @@ const BannerCarousel = ({ page, height = 'h-[420px] md:h-[500px]', fallback = nu
 
     useEffect(() => {
         api.get(`/banners/active${page ? `?page=${page}` : ''}`)
-            .then(res => { setBanners(res.data.data); setLoaded(true); })
-            .catch(() => setLoaded(true));
+            .then(res => { setBanners(res.data?.data || []); setLoaded(true); })
+            .catch(() => { setBanners([]); setLoaded(true); });
     }, [page]);
 
     useEffect(() => {

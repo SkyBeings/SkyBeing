@@ -1,8 +1,12 @@
 import axios from 'axios';
 
+// In production (Cloudflare), VITE_API_BASE_URL must be set to your Render backend URL
+// In local dev, it falls back to '/api/v1' which Vite proxies to localhost:8000
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 const api = axios.create({
-    baseURL: '/api/v1',
-    withCredentials: true, // Necessary if the backend is using cookies for JWT, etc.
+    baseURL,
+    withCredentials: true,
 });
 
 // Optionally, add an interceptor for handling 401s or adding Authorization headers if not using cookies
