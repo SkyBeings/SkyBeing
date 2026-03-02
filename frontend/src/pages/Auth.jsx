@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { loginUser, registerUser, clearError, googleLogin } from '../store/slices/authSlice';
 import { GoogleLogin } from '@react-oauth/google';
 import api from '../api/axios';
+import ForgotPassword from '../components/auth/ForgotPassword';
 
 const Auth = () => {
     const [isLogin, setIsLogin] = useState(false);
+    const [showForgot, setShowForgot] = useState(false);
     const [formData, setFormData] = useState({ fullName: '', email: '', password: '' });
     const [authBanner, setAuthBanner] = useState('https://images.unsplash.com/photo-1555169062-013468b47726?auto=format&fit=crop&q=80&w=800');
 
@@ -17,7 +19,9 @@ const Auth = () => {
                     setAuthBanner(res.data.data[0].imageUrl);
                 }
             })
-            .catch(err => console.error("Could not fetch auth banner", err));
+            .catch(() => {
+                // Fail silently for aesthetic UI
+            });
     }, []);
 
     const dispatch = useDispatch();
@@ -84,8 +88,17 @@ const Auth = () => {
                         <div className="border-b border-gray-400 pb-2">
                             <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full outline-none text-gray-900 font-medium placeholder-gray-500" placeholder="Email Address" required />
                         </div>
-                        <div className="border-b border-gray-400 pb-2">
+                        <div className="border-b border-gray-400 pb-2 relative">
                             <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full outline-none text-gray-900 font-medium placeholder-gray-500" placeholder="Password" required />
+                            {isLogin && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgot(true)}
+                                    className="absolute right-0 bottom-2 text-[#DB4444] text-xs font-semibold hover:underline"
+                                >
+                                    Forgot Password?
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-6 mt-4">
@@ -98,7 +111,7 @@ const Auth = () => {
                                         dispatch(googleLogin(credentialResponse.credential));
                                     }}
                                     onError={() => {
-                                        console.log('Login Failed');
+                                        // login failed
                                     }}
                                 />
                             </div>
@@ -113,6 +126,7 @@ const Auth = () => {
                     </p>
                 </div>
 
+                {showForgot && <ForgotPassword onClose={() => setShowForgot(false)} />}
             </div>
         </div>
     );

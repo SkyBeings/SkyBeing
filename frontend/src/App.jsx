@@ -1,8 +1,39 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCart } from "./store/slices/cartSlice";
 import { fetchCurrentUser } from "./store/slices/authSlice";
+import api from "./api/axios";
+import { ToastProvider } from "./components/ui/Toast";
+import BirdLoader from "./components/ui/BirdLoader";
+
+// ── Visit tracker: fires once per route change ──────────────────────────────
+const getSessionId = () => {
+  let sid = sessionStorage.getItem("_sid");
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem("_sid", sid);
+  }
+  return sid;
+};
+
+function VisitTracker() {
+  const location = useLocation();
+  const lastPath = useRef(null);
+  useEffect(() => {
+    // Only track once per distinct path per session
+    if (location.pathname === lastPath.current) return;
+    lastPath.current = location.pathname;
+    // Fire and forget — don't block the UI
+    api.post("/stats/visit", {
+      page: location.pathname,
+      sessionId: getSessionId(),
+    }).catch(() => { }); // silently ignore errors
+  }, [location.pathname]);
+  return null;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
@@ -19,6 +50,10 @@ import ReturnPolicy from "./pages/ReturnPolicy";
 import ShippingPolicy from "./pages/ShippingPolicy";
 import TermsConditions from "./pages/TermsConditions";
 import AboutUs from "./pages/AboutUs";
+
+import Gallery from "./pages/Gallery";
+import Blogs from "./pages/Blogs";
+import BlogDetails from "./pages/BlogDetails";
 
 import AdminRoute from "./components/auth/AdminRoute";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -61,13 +96,19 @@ function App() {
   }, [dispatch, isAuthenticated]);
 
   if (authStatus === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-skyGreen font-medium">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <BirdLoader text="Waking up the birds..." />
+      </div>
+    );
   }
 
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen font-sans selection:bg-skyGreen/20 selection:text-skyGreen">
-        <Routes>
+    <ToastProvider>
+      <Router>
+        <VisitTracker />
+        <div className="flex flex-col min-h-screen font-sans selection:bg-skyGreen/20 selection:text-skyGreen">
+          <Routes>
           {/* ── Admin Routes ─────────────────────────────────── */}
           <Route path="/admin" element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
@@ -112,6 +153,9 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/gallery" element={<Gallery />} />
+                  <Route path="/blogs" element={<Blogs />} />
+                  <Route path="/blogs/:slug" element={<BlogDetails />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/login" element={<Auth />} />
@@ -131,6 +175,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    </ToastProvider>
   );
 }
 

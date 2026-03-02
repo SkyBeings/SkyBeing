@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Star, StarHalf, Truck, ShieldCheck, RefreshCw, Facebook, Linkedin, Twitter, Heart } from 'lucide-react';
+import { Star, StarHalf, Facebook, Linkedin, Twitter, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductById, fetchProducts } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { toggleWishlist, selectWishlistIds } from '../store/slices/wishlistSlice';
 import api from '../api/axios';
+import { useToast } from '../components/ui/Toast';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -16,6 +17,21 @@ const ProductDetails = () => {
     const [activeTab, setActiveTab] = useState('description');
     const wishlistIds = useSelector(selectWishlistIds);
     const isWishlisted = product ? wishlistIds.includes(product._id) : false;
+    const toast = useToast();
+
+    // Image gallery state
+    const [activeImg, setActiveImg] = useState(0);
+    const [imgFading, setImgFading] = useState(false);
+
+    const changeImg = useCallback((idx) => {
+        if (!product?.images?.length) return;
+        const clamped = (idx + product.images.length) % product.images.length;
+        setImgFading(true);
+        setTimeout(() => {
+            setActiveImg(clamped);
+            setImgFading(false);
+        }, 120);
+    }, [product?.images?.length]);
 
     // Review form state
     const [rating, setRating] = useState(5);
@@ -24,18 +40,17 @@ const ProductDetails = () => {
 
     const handleReviewSubmit = async (e) => {
         e.preventDefault();
-        if (!isAuthenticated) return alert("Please login to submit a review.");
-        if (!comment.trim()) return alert("Please enter a review comment.");
-
+        if (!isAuthenticated) { toast.warning('Please login to submit a review.'); return; }
+        if (!comment.trim()) { toast.warning('Please enter a review comment.'); return; }
         try {
             setIsSubmittingReview(true);
             await api.post(`/products/${product._id}/reviews`, { rating, comment });
-            alert("Review submitted successfully!");
-            setComment("");
+            toast.success('Review submitted successfully!');
+            setComment('');
             setRating(5);
-            dispatch(fetchProductById(product._id)); // refresh product data
+            dispatch(fetchProductById(product._id));
         } catch (error) {
-            alert(error.response?.data?.message || "Failed to submit review");
+            toast.error(error.response?.data?.message || 'Failed to submit review');
         } finally {
             setIsSubmittingReview(false);
         }
@@ -43,6 +58,7 @@ const ProductDetails = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0); // scroll to top when id changes
+        setActiveImg(0);       // reset gallery to first image
         if (id) {
             dispatch(fetchProductById(id));
         }
@@ -73,18 +89,82 @@ const ProductDetails = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="flex flex-col lg:flex-row gap-12">
                     {/* Images Gallery */}
-                    <div className="flex flex-col-reverse md:flex-row gap-6 w-full lg:w-1/2">
-                        {/* Thumbnails */}
-                        <div className="flex flex-row md:flex-col gap-4 overflow-x-auto md:w-24 shrink-0 pb-2 md:pb-0">
-                            {product.images?.slice(0, 4).map((img, idx) => (
-                                <div key={idx} className="w-20 md:w-full shrink-0 aspect-square bg-[#F9F1E7] rounded border-2 border-transparent hover:border-black cursor-pointer overflow-hidden">
-                                    <img src={img} alt="Thumb" className="w-full h-full object-cover" />
-                                </div>
+                    <div className="flex flex-col-reverse md:flex-row gap-4 w-full lg:w-1/2">
+                        {/* Thumbnails column */}
+                        <div className="flex flex-row md:flex-col gap-3 overflow-x-auto md:overflow-y-auto md:max-h-[500px] md:w-20 shrink-0 pb-2 md:pb-0 pr-1">
+                            {product.images?.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => changeImg(idx)}
+                                    className={`w-16 md:w-full shrink-0 aspect-square rounded overflow-hidden border-2 transition-all duration-200 ${
+                                        activeImg === idx
+                                            ? 'border-black shadow-md scale-105'
+                                            : 'border-transparent hover:border-gray-300 opacity-70 hover:opacity-100'
+                                    }`}
+                                >
+                                    <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
                             ))}
                         </div>
-                        {/* Main Image */}
-                        <div className="flex-1 bg-[#F9F1E7] rounded h-80 md:h-[500px] overflow-hidden shrink-0">
-                            {product.images?.[0] && <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />}
+
+                        {/* Main image with arrows */}
+                        <div className="relative flex-1 bg-[#F9F1E7] rounded h-80 md:h-[500px] overflow-hidden group">
+                            {/* Main image */}
+                            {product.images?.[activeImg] && (
+                                <img
+                                    key={activeImg}
+                                    src={product.images[activeImg]}
+                                    alt={product.name}
+                                    className={`w-full h-full object-cover transition-opacity duration-150 ${
+                                        imgFading ? 'opacity-0' : 'opacity-100'
+                                    }`}
+                                />
+                            )}
+
+                            {/* Left / Right arrows — only show if multiple images */}
+                            {product.images?.length > 1 && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => changeImg(activeImg - 1)}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        aria-label="Previous image"
+                                    >
+                                        <ChevronLeft className="w-5 h-5 text-gray-800" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => changeImg(activeImg + 1)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        aria-label="Next image"
+                                    >
+                                        <ChevronRight className="w-5 h-5 text-gray-800" />
+                                    </button>
+
+                                    {/* Dot indicators */}
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                                        {product.images.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => changeImg(idx)}
+                                                className={`rounded-full transition-all ${
+                                                    activeImg === idx
+                                                        ? 'w-4 h-2 bg-black'
+                                                        : 'w-2 h-2 bg-black/30 hover:bg-black/60'
+                                                }`}
+                                                aria-label={`Go to image ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* Counter badge */}
+                                    <div className="absolute top-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                        {activeImg + 1} / {product.images.length}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -133,9 +213,11 @@ const ProductDetails = () => {
                                 onClick={async () => {
                                     try {
                                         await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
-                                        alert("Added to cart!");
+                                        toast.cart(`${product.name} × ${quantity}`, {
+                                            image: product.images?.[0],
+                                        });
                                     } catch (err) {
-                                        alert(err || "Please login to add to cart");
+                                        toast.error(err || 'Please login to add to cart');
                                     }
                                 }}
                                 className="border border-black rounded-xl h-14 px-8 md:px-10 text-black font-semibold hover:bg-black hover:text-white transition shrink-0">
@@ -324,7 +406,7 @@ const ProductDetails = () => {
             {relatedProducts && relatedProducts.length > 0 && (
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 mt-8 border-t border-gray-200 pt-12">
                     <h2 className="text-4xl font-semibold text-center text-black mb-12">Related Products</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
                         {relatedProducts.map(relProd => (
                             <Link to={`/product/${relProd._id}`} key={relProd._id} className="bg-[#F4F5F7] pb-4 flex flex-col items-center group cursor-pointer block border border-transparent hover:border-gray-200 shadow-sm hover:shadow-md transition-all">
                                 <div className="w-full h-64 bg-gray-200 mb-4 overflow-hidden relative">

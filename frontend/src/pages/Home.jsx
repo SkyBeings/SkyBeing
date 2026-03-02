@@ -4,13 +4,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { toggleWishlist, selectWishlistIds } from '../store/slices/wishlistSlice';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import BannerCarousel from '../components/ui/BannerCarousel';
 import api from '../api/axios';
+import { useToast } from '../components/ui/Toast';
 
 import birdFeederImg from '../assets/images/bird_feeder.png';
 import waterFeederImg from '../assets/images/water_feeder.png';
 import birdHouseImg from '../assets/images/bird_house.png';
+
+import BirdLoader from '../components/ui/BirdLoader';
 
 // ── Gallery Section Component ────────────────────────────────────────────────
 const MOSAIC_COLS = [
@@ -58,7 +61,7 @@ const GallerySection = () => {
 
             {loading ? (
                 <div className="flex items-center justify-center h-48">
-                    <div className="w-8 h-8 border-4 border-skyGreen border-t-transparent rounded-full animate-spin" />
+                    <BirdLoader text="Loading Gallery..." />
                 </div>
             ) : images.length > 0 ? (
                 <div className="max-w-6xl mx-auto px-4 overflow-hidden">
@@ -88,6 +91,22 @@ const GallerySection = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* View All Buttons */}
+                    <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <Link 
+                            to="/gallery" 
+                            className="w-full sm:w-auto px-8 py-3.5 bg-[#4A6443] text-white font-bold rounded-xl hover:bg-green-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm uppercase tracking-wider"
+                        >
+                            View All Gallery
+                        </Link>
+                        <Link 
+                            to="/blogs" 
+                            className="w-full sm:w-auto px-8 py-3.5 bg-[#FCECD8] text-[#A77B51] font-bold rounded-xl hover:bg-[#A77B51] hover:text-white transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm uppercase tracking-wider border border-[#A77B51]/20"
+                        >
+                            Read Our Blogs
+                        </Link>
+                    </div>
                 </div>
             ) : null}
         </section>
@@ -101,6 +120,7 @@ const Home = () => {
     const { items: products, status } = useSelector(state => state.products);
     const wishlistIds = useSelector(selectWishlistIds);
     const [hoveredProd, setHoveredProd] = useState(null);
+    const toast = useToast();
 
     useEffect(() => {
         if (status === 'idle') dispatch(fetchProducts());
@@ -119,7 +139,6 @@ const Home = () => {
             {/* ========== HERO BANNER ========== */}
             <BannerCarousel
                 page="home"
-                height="h-[420px] md:h-[500px]"
                 fallback={
                     <div className="w-full h-[420px] md:h-[500px] relative overflow-hidden"
                         style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #5BB5E0 40%, #3A9FD8 70%, #4AAF5A 95%, #3D8B37 100%)' }}>
@@ -161,7 +180,7 @@ const Home = () => {
             <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
                 <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-10">Our Products</h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     {displayProducts.length > 0 ? displayProducts.map((prod) => (
                         <div key={prod._id}
                             className="relative group flex flex-col bg-white border border-gray-100 overflow-hidden transition duration-300 hover:shadow-lg cursor-pointer"
@@ -178,16 +197,18 @@ const Home = () => {
                                         </svg>
                                     </div>
                                 )}
+
+                                {/* Desktop Hover Overlay */}
                                 {hoveredProd === prod._id && (
-                                    <div className="absolute inset-0 bg-[#3A3A3A]/80 flex flex-col items-center justify-center gap-3 transition-opacity">
+                                    <div className="hidden md:flex absolute inset-0 bg-[#3A3A3A]/80 flex-col items-center justify-center gap-3 transition-opacity">
                                         <button
                                             onClick={async (e) => {
                                                 e.stopPropagation();
                                                 try {
                                                     await dispatch(addToCart({ productId: prod._id, quantity: 1 })).unwrap();
-                                                    alert("Added to cart!");
+                                                    toast.cart(prod.name, { image: prod.images?.[0] });
                                                 } catch (err) {
-                                                    alert(err || "Please login to add to cart");
+                                                    toast.error(err || 'Please login to add to cart');
                                                 }
                                             }}
                                             className="bg-white text-skyGreen font-bold px-8 py-2.5 text-sm hover:bg-gray-100 transition">
@@ -208,9 +229,33 @@ const Home = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Mobile Quick Actions (Always visible on mobile) */}
+                                <div className="md:hidden absolute bottom-2 right-2 z-10 flex flex-col gap-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); dispatch(toggleWishlist(prod)); }}
+                                        className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md border bg-white ${wishlistIds.includes(prod._id) ? 'border-red-100' : 'border-gray-100'}`}
+                                    >
+                                        <Heart className={`w-3.5 h-3.5 ${wishlistIds.includes(prod._id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                                    </button>
+                                    <button 
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                                await dispatch(addToCart({ productId: prod._id, quantity: 1 })).unwrap();
+                                                toast.cart(prod.name, { image: prod.images?.[0] });
+                                            } catch (err) {
+                                                toast.error(err || 'Please login to add to cart');
+                                            }
+                                        }}
+                                        className="w-7 h-7 bg-skyGreen text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                                    >
+                                        <ShoppingCart className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="w-full bg-[#F4F5F7] p-4">
-                                <div className="text-base font-bold text-[#3A3A3A] mb-1 block group-hover:text-skyGreen transition">
+                            <div className="w-full bg-[#F4F5F7] p-3 sm:p-4">
+                                <div className="text-sm sm:text-base font-bold text-[#3A3A3A] mb-1 block group-hover:text-skyGreen transition line-clamp-1">
                                     {prod.name}
                                 </div>
                                 <p className="text-xs text-[#898989] font-medium mb-2">{prod.category || 'Feeder'}</p>

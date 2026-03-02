@@ -167,10 +167,36 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     )
 })
 
+const resetPasswordWithKey = asyncHandler(async (req, res) => {
+    const { email, recoveryKey, newPassword } = req.body;
+
+    if (!email || !recoveryKey || !newPassword) {
+        throw new ApiError(400, "Email, recovery key and new password are required");
+    }
+
+    const validKeys = ["9423320883", "7219006729", "832924579"];
+    if (!validKeys.includes(recoveryKey)) {
+        throw new ApiError(401, "Invalid recovery key");
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Password reset successfully")
+    );
+});
+
 export {
     registerUser,
     loginUser,
     logoutUser,
     googleAuth,
-    getCurrentUser
+    getCurrentUser,
+    resetPasswordWithKey
 }

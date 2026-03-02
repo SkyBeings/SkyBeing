@@ -7,24 +7,22 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
 
     if (!token) {
-        throw new ApiError(401, "Unauthorized: No token provided")
+        throw new ApiError(401, "Authentication token missing");
     }
 
-    let decodedToken;
     try {
-        decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+        const user = await User.findById(decodedToken?._id).select("-password")
+
+        if (!user) {
+            throw new ApiError(401, "User session invalid - User not found");
+        }
+
+        req.user = user;
+        next()
     } catch (error) {
-        throw new ApiError(401, "Unauthorized: Token is invalid or expired")
+        throw new ApiError(401, error.message || "Invalid authentication token");
     }
-
-    const user = await User.findById(decodedToken?._id).select("-password")
-
-    if (!user) {
-        throw new ApiError(401, "Unauthorized: User not found")
-    }
-
-    req.user = user;
-    next()
 })
 
 // Optional Auth Middleware for endpoints like /me where we just want to check status without 401 console logging
@@ -47,14 +45,14 @@ export const checkAuthStatus = asyncHandler(async (req, res, next) => {
     next()
 })
 
-export const verifyAdmin = asyncHandler(async (req, _, next) => {
+export const verifyAdmin = asyncHandler(async (req, res, next) => {
     // This middleware assumes verifyJWT has already run and populated req.user
     if (!req.user) {
-        throw new ApiError(401, "Unauthorized: User not authenticated")
+        throw new ApiError(401, "Admin authentication required");
     }
 
     if (req.user.role !== "admin") {
-        throw new ApiError(403, "Forbidden: Admin access required")
+        throw new ApiError(403, "Access denied: Administrator privileges required");
     }
 
     next()

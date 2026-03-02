@@ -205,8 +205,10 @@ const AdminBanners = () => {
 
                             {/* Title & Subtitle */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-                                <input required value={form.title} onChange={e => setF('title', e.target.value)}
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    Title <span className="text-gray-400 text-xs font-normal">(optional)</span>
+                                </label>
+                                <input value={form.title} onChange={e => setF('title', e.target.value)}
                                     placeholder="e.g. Feed the World's Feathered Friends"
                                     className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm outline-none focus:bg-white focus:border-skyGreen focus:ring-2 focus:ring-skyGreen/20 transition-all placeholder-gray-400" />
                             </div>

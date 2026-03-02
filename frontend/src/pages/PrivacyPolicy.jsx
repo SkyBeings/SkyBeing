@@ -6,7 +6,7 @@ const PrivacyPolicy = () => {
             {/* ── Hero Banner ──────────────────────────────────────────────── */}
             <BannerCarousel
                 page="legal"
-                height="h-[300px]"
+                height="md:h-[300px] lg:h-[400px]"
                 fallback={
                     <div className="h-[300px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
                         <div className="relative z-10 text-center">

@@ -1,5 +1,5 @@
 {
-  "name": "vite-project",
+  "name": "skybeing-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.6",
+    "dompurify": "^3.3.1",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",

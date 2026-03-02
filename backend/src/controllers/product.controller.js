@@ -18,17 +18,12 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 
     const imageLocalPaths = req.files?.map(file => file.path) || [];
-    console.log(`[createProduct] files received: ${imageLocalPaths.length}`, imageLocalPaths);
-    console.log(`[createProduct] CLOUDINARY_CLOUD_NAME: ${process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'MISSING'}`);
 
     const uploadedImages = [];
     for (const localPath of imageLocalPaths) {
-        console.log(`[createProduct] Uploading: ${localPath}`);
         const uploaded = await uploadOnCloudinary(localPath);
-        console.log(`[createProduct] Upload result:`, uploaded?.url || 'FAILED - no URL returned');
         if (uploaded?.url) uploadedImages.push(uploaded.url);
     }
-    console.log(`[createProduct] Final uploaded images:`, uploadedImages);
 
     // Parse tags if sent as JSON string
     let parsedTags = [];
@@ -113,9 +108,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (req.files && req.files.length > 0) {
         const newImages = [];
         for (const file of req.files) {
-            console.log(`[updateProduct] Uploading: ${file.path}`);
             const uploaded = await uploadOnCloudinary(file.path);
-            console.log(`[updateProduct] Upload result:`, uploaded?.url || 'FAILED');
             if (uploaded?.url) newImages.push(uploaded.url);
         }
         if (newImages.length > 0) updatedImages = newImages;

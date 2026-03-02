@@ -15,18 +15,23 @@ import {
     adminDeleteProduct,
     adminGetOrders,
     adminGetOrderById,
-    adminUpdateOrderStatus
+    adminUpdateOrderStatus,
+    verifySecurityPassword
 } from "../controllers/admin.controller.js";
+import { getSiteStats } from "../controllers/stats.controller.js";
 
 const router = Router();
 
 // Shield all admin routes
 router.use(verifyJWT, verifyAdmin);
 
+router.route("/verify-security").post(verifySecurityPassword);
+
 // =======================
 // DASHBOARD & ANALYTICS
 // =======================
 router.route("/dashboard").get(getAdminDashboard);
+router.route("/site-stats").get(getSiteStats);
 
 // =======================
 // USER MANAGEMENT

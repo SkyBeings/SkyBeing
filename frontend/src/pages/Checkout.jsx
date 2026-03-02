@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart, clearCartLocal } from '../store/slices/cartSlice';
 import api from '../api/axios';
+import { useToast } from '../components/ui/Toast';
 
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -20,6 +21,7 @@ const Checkout = () => {
     const { items, totalAmount, status } = useSelector(state => state.cart);
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('cod');
+    const toast = useToast();
 
     useEffect(() => {
         if (status === 'idle') {
@@ -56,7 +58,7 @@ const Checkout = () => {
             if (paymentMethod === 'online') {
                 const res = await loadRazorpayScript();
                 if (!res) {
-                    alert('Razorpay SDK failed to load. Please check your internet connection.');
+                    toast.error('Razorpay SDK failed to load. Please check your internet connection.');
                     setLoading(false);
                     return;
                 }
@@ -74,20 +76,18 @@ const Checkout = () => {
                     order_id: rzpOrderId,
                     handler: async function (response) {
                         try {
-                            // Verify Payment
                             await api.post('/payments/verify', {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
                                 orderId: orderId
                             });
-
                             dispatch(clearCartLocal());
-                            alert('Payment successful and Order placed!');
+                            toast.success('Payment successful! Your order has been placed.', { duration: 4000 });
                             navigate('/');
                         } catch (err) {
                             console.error(err);
-                            alert("Payment verification failed! Please contact support.");
+                            toast.error('Payment verification failed! Please contact support.');
                             navigate('/');
                         }
                     },
@@ -101,22 +101,21 @@ const Checkout = () => {
                 };
 
                 const paymentObject = new window.Razorpay(options);
-                paymentObject.on('payment.failed', function (response) {
-                    alert("Payment Failed!");
+                paymentObject.on('payment.failed', function () {
+                    toast.error('Payment failed. Please try again.');
                 });
                 paymentObject.open();
 
             } else {
-                // COD flow
                 dispatch(clearCartLocal());
-                alert('Order placed successfully (COD)!');
+                toast.success('Order placed successfully! (Cash on Delivery)', { duration: 4000 });
                 navigate('/');
             }
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to place order');
+            toast.error(error.response?.data?.message || 'Failed to place order');
         } finally {
-            setLoading(false); // Fix: was setting it to true at finally block
+            setLoading(false);
         }
     };
 

@@ -12,7 +12,7 @@ const AboutUs = () => {
             {/* ── Hero Banner ──────────────────────────────────────────────── */}
             <BannerCarousel
                 page="about"
-                height="h-[300px]"
+                height="md:h-[300px] lg:h-[400px]"
                 fallback={
                     <div className="h-[300px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
                         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1555169062-013468b47726?auto=format&fit=crop&q=80')] bg-cover bg-center"></div>

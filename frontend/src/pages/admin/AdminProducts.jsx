@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, deleteProduct, createProduct, updateProduct } from '../../store/slices/productSlice';
-import { Plus, Trash2, Edit, Search, X, Loader2, Image as ImageIcon, Save, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, X, Loader2, Image as ImageIcon, Save, ArrowLeft, Tag } from 'lucide-react';
 
 const CATEGORIES = ['Feeder', 'Bird House', 'Water Feeder', 'Food', 'Accessories', 'Shelter', 'Toys'];
 const TAX_OPTIONS = ['None', 'GST 5%', 'GST 12%', 'GST 18%', 'GST 28%'];
@@ -149,30 +149,172 @@ const GeneralInfoSection = ({ form, set }) => (
     </Section>
 );
 
-const DescriptionSection = ({ form, set }) => (
-    <Section title="Product Description">
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
-                <select className="bg-transparent text-gray-500 text-xs outline-none">
-                    <option>Normal</option><option>H1</option><option>H2</option>
-                </select>
-                <span className="text-gray-300">|</span>
-                {['B', 'I', 'U'].map(f => (
-                    <button key={f} type="button"
-                        className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-skyGreen hover:bg-green-50 rounded font-bold text-xs transition-colors">
-                        {f}
+// Inserts formatting markers around selected text in a textarea ref
+const wrapSelection = (textareaRef, value, before, after, setter) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = value.substring(start, end) || 'text';
+    const newVal = value.substring(0, start) + before + selected + after + value.substring(end);
+    setter(newVal);
+    setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(start + before.length, start + before.length + selected.length);
+    }, 0);
+};
+
+const DescriptionSection = ({ form, set }) => {
+    const taRef = useRef(null);
+    const FORMAT_BTNS = [
+        { label: 'B', title: 'Bold', before: '**', after: '**', style: 'font-bold' },
+        { label: 'I', title: 'Italic', before: '_', after: '_', style: 'italic' },
+        { label: 'U', title: 'Underline', before: '<u>', after: '</u>', style: 'underline' },
+    ];
+    const LIST_BTNS = [
+        { label: '• List', title: 'Bullet list item', before: '\n• ', after: '' },
+        { label: '1. List', title: 'Numbered list item', before: '\n1. ', after: '' },
+    ];
+    return (
+        <Section title="Product Description">
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+                    {FORMAT_BTNS.map(f => (
+                        <button key={f.label} type="button" title={f.title}
+                            onClick={() => wrapSelection(taRef, form.description, f.before, f.after, v => set('description', v))}
+                            className={`w-7 h-7 flex items-center justify-center text-gray-600 hover:text-skyGreen hover:bg-green-50 rounded text-xs transition-colors ${f.style}`}>
+                            {f.label}
+                        </button>
+                    ))}
+                    <span className="text-gray-200 mx-1">|</span>
+                    {LIST_BTNS.map(b => (
+                        <button key={b.label} type="button" title={b.title}
+                            onClick={() => wrapSelection(taRef, form.description, b.before, b.after, v => set('description', v))}
+                            className="px-2 h-7 flex items-center text-gray-600 hover:text-skyGreen hover:bg-green-50 rounded text-xs transition-colors">
+                            {b.label}
+                        </button>
+                    ))}
+                    <span className="text-gray-200 mx-1">|</span>
+                    <button type="button" title="Clear all" onClick={() => set('description', '')}
+                        className="px-2 h-7 flex items-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded text-xs transition-colors">
+                        Clear
                     </button>
-                ))}
-                <span className="text-gray-300">|</span>
-                <button type="button" className="text-gray-500 hover:text-skyGreen text-sm px-1">≡</button>
-                <button type="button" className="text-gray-500 hover:text-skyGreen text-sm px-1">≡</button>
+                    <span className="ml-auto text-xs text-gray-400">{form.description.length} chars</span>
+                </div>
+                <textarea ref={taRef} rows={6} placeholder="Enter detailed product description..."
+                    value={form.description} onChange={e => set('description', e.target.value)}
+                    className="w-full bg-white text-gray-900 px-4 py-3 text-sm outline-none resize-y placeholder-gray-400 min-h-[120px]" />
             </div>
-            <textarea rows={5} placeholder="Enter detailed product description..."
-                value={form.description} onChange={e => set('description', e.target.value)}
-                className="w-full bg-white text-gray-900 px-4 py-3 text-sm outline-none resize-none placeholder-gray-400" />
-        </div>
-    </Section>
-);
+            {form.description && (
+                <p className="text-xs text-gray-400">Tip: Select text then click B / I / U to format. Markdown supported.</p>
+            )}
+        </Section>
+    );
+};
+
+// ─── Image Sorter (drag-to-reorder + remove + upload) ─────────────────────
+const ImageSorter = ({ images, previewUrls, handleImageChange }) => {
+    const [dragIdx, setDragIdx] = useState(null);
+    const [overIdx, setOverIdx] = useState(null);
+
+    const reorder = (from, to) => {
+        if (from === to) return;
+        const newUrls = [...previewUrls];
+        const newFiles = [...images];
+        const [movedUrl] = newUrls.splice(from, 1);
+        const [movedFile] = newFiles.splice(from, 1);
+        newUrls.splice(to, 0, movedUrl);
+        newFiles.splice(to, 0, movedFile);
+        handleImageChange({ _manual: { urls: newUrls, files: newFiles } });
+    };
+
+    const removeImage = (i) => {
+        const newUrls = previewUrls.filter((_, idx) => idx !== i);
+        const newFiles = images.filter((_, idx) => idx !== i);
+        handleImageChange({ _manual: { urls: newUrls, files: newFiles } });
+    };
+
+    return (
+        <Section title="Photos">
+            <p className="text-xs text-gray-400 mb-3">
+                Drag images to reorder. The <span className="font-semibold text-skyGreen">first image</span> is the cover photo shown in listings.
+            </p>
+
+            {previewUrls.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
+                    {previewUrls.map((url, i) => (
+                        <div
+                            key={url}
+                            draggable
+                            onDragStart={() => { setDragIdx(i); }}
+                            onDragOver={e => { e.preventDefault(); setOverIdx(i); }}
+                            onDragEnd={() => { reorder(dragIdx, overIdx); setDragIdx(null); setOverIdx(null); }}
+                            onDrop={e => e.preventDefault()}
+                            className={`relative group cursor-grab active:cursor-grabbing rounded-xl overflow-hidden border-2 transition-all select-none ${i === overIdx && dragIdx !== i
+                                    ? 'border-skyGreen scale-105 shadow-lg'
+                                    : dragIdx === i
+                                        ? 'border-gray-300 opacity-50'
+                                        : 'border-transparent'
+                                }`}
+                            style={{ aspectRatio: '1' }}
+                        >
+                            <img
+                                src={url}
+                                alt={`Product image ${i + 1}`}
+                                className="w-full h-full object-cover"
+                                draggable={false}
+                            />
+
+                            {/* Order badge */}
+                            <div className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow ${i === 0
+                                    ? 'bg-skyGreen text-white'
+                                    : 'bg-black/50 text-white'
+                                }`}>
+                                {i === 0 ? '★' : i + 1}
+                            </div>
+
+                            {/* Cover badge */}
+                            {i === 0 && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-skyGreen/90 text-white text-[9px] font-bold text-center py-0.5 uppercase tracking-wider">
+                                    Cover
+                                </div>
+                            )}
+
+                            {/* Remove button */}
+                            <button
+                                type="button"
+                                onClick={() => removeImage(i)}
+                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                title="Remove image"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+
+                            {/* Drag hint */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <span className="text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity drop-shadow">
+                                    ⠿ Drag
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Upload zone */}
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-5 cursor-pointer hover:border-skyGreen hover:bg-green-50/40 transition-all group">
+                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-green-100 flex items-center justify-center mb-2 transition-colors">
+                    <ImageIcon className="w-5 h-5 text-gray-400 group-hover:text-skyGreen transition-colors" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600 group-hover:text-skyGreen transition-colors">
+                    {previewUrls.length > 0 ? `Add more images (${previewUrls.length} added)` : 'Upload Product Images'}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP · up to 5MB each</span>
+            </label>
+        </Section>
+    );
+};
 
 // ─── SIMPLE PRODUCT FORM ──────────────────────────────────────────────────
 const SimpleProductForm = ({ form, set, images, previewUrls, handleImageChange, tagInput, setTagInput }) => {
@@ -282,10 +424,21 @@ const SimpleProductForm = ({ form, set, images, previewUrls, handleImageChange, 
                     )}
                 </Section>
 
-                <Section title="Product Attributes">
-                    <Label>Select Attributes</Label>
-                    <Input placeholder="Select Attribute" disabled />
-                    <p className="text-xs text-gray-400 mt-1">Attributes like Color, Size will be available here.</p>
+                <Section title="Discount Period (Optional)">
+                    <p className="text-xs text-gray-400 mb-3">Set a date range for when the discount is active. Leave empty for always-on discount.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label>Discount Start Date</Label>
+                            <Input type="date" value={form.discountStartDate} onChange={e => set('discountStartDate', e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Discount End Date</Label>
+                            <Input type="date" value={form.discountEndDate} onChange={e => set('discountEndDate', e.target.value)} />
+                        </div>
+                    </div>
+                    {form.discountStartDate && form.discountEndDate && new Date(form.discountEndDate) < new Date(form.discountStartDate) && (
+                        <p className="text-xs text-red-500 font-medium">⚠ End date must be after start date</p>
+                    )}
                 </Section>
 
                 <DescriptionSection form={form} set={set} />
@@ -330,15 +483,33 @@ const SimpleProductForm = ({ form, set, images, previewUrls, handleImageChange, 
                                 {form.tags.map(tag => (
                                     <span key={tag} className="flex items-center gap-1 bg-green-50 text-skyGreen border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-medium">
                                         {tag}
-                                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-500 transition-colors">
+                                        <button type="button" onClick={() => removeTag(tag)} title="Remove tag" className="hover:text-red-500 transition-colors ml-0.5">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </span>
                                 ))}
                             </div>
                         )}
-                        <Input placeholder="Add Tag..." value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag} />
-                        <p className="text-xs text-gray-400 mt-1">Type and press Enter to add tags</p>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Add a tag and press Enter or +"
+                                value={tagInput}
+                                onChange={e => setTagInput(e.target.value)}
+                                onKeyDown={addTag}
+                            />
+                            <button type="button"
+                                onClick={() => {
+                                    if (tagInput.trim() && !form.tags.includes(tagInput.trim())) {
+                                        set('tags', [...form.tags, tagInput.trim()]);
+                                        setTagInput('');
+                                    }
+                                }}
+                                className="flex-shrink-0 w-10 h-10 flex items-center justify-center border-2 border-skyGreen text-skyGreen rounded-xl hover:bg-skyGreen hover:text-white transition-all font-bold text-lg"
+                                title="Add tag">
+                                <Tag className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Press Enter or click + to add a tag</p>
                     </div>
                 </Section>
 
@@ -372,27 +543,7 @@ const SimpleProductForm = ({ form, set, images, previewUrls, handleImageChange, 
                     </div>
                 </Section>
 
-                <Section title="Media">
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-8 cursor-pointer hover:border-skyGreen hover:bg-green-50/40 transition-all group">
-                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
-                        {previewUrls.length === 0 ? (
-                            <>
-                                <div className="w-14 h-14 rounded-2xl bg-gray-100 group-hover:bg-green-100 flex items-center justify-center mb-3 transition-colors">
-                                    <ImageIcon className="w-7 h-7 text-gray-400 group-hover:text-skyGreen transition-colors" />
-                                </div>
-                                <span className="text-sm font-semibold text-gray-600 group-hover:text-skyGreen transition-colors">Upload Images</span>
-                                <span className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB each</span>
-                            </>
-                        ) : (
-                            <div className="flex flex-wrap gap-3 justify-center">
-                                {previewUrls.map((url, i) => <img key={i} src={url} alt="" className="w-20 h-20 object-cover rounded-xl border border-gray-200 shadow-sm" />)}
-                                <div className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl text-gray-400 text-xs hover:border-skyGreen hover:text-skyGreen transition-colors">
-                                    <Plus className="w-5 h-5 mb-1" />Add more
-                                </div>
-                            </div>
-                        )}
-                    </label>
-                </Section>
+                <ImageSorter images={images} previewUrls={previewUrls} handleImageChange={handleImageChange} />
             </div>
         </div>
     );
@@ -414,10 +565,8 @@ const VariantProductForm = ({ form, set, images, previewUrls, handleImageChange 
     };
 
     const addVariant = () => {
-        if (selectedColors.length === 0 && !newVariant.value) return;
-
-        // If using color picker, add each selected color as a variant row
         if (selectedAttribute === 'Color' || !selectedAttribute) {
+            if (selectedColors.length === 0) return;
             const colorVariants = selectedColors.map(color => ({
                 attribute: 'Color',
                 value: color.name,
@@ -425,20 +574,24 @@ const VariantProductForm = ({ form, set, images, previewUrls, handleImageChange 
                 stock: Number(newVariant.stock) || 0,
                 price: Number(newVariant.price) || Number(form.price) || 0
             }));
-            setVariantList(prev => [...prev, ...colorVariants]);
+            const updated = [...variantList, ...colorVariants];
+            setVariantList(updated);
+            set('variants', updated);   // ← use computed array, not stale state
             setSelectedColors([]);
         } else {
-            setVariantList(prev => [...prev, {
+            if (!newVariant.value.trim()) return;
+            const newEntry = {
                 attribute: selectedAttribute,
-                value: newVariant.value,
+                value: newVariant.value.trim(),
                 color: '',
                 stock: Number(newVariant.stock) || 0,
                 price: Number(newVariant.price) || Number(form.price) || 0
-            }]);
+            };
+            const updated = [...variantList, newEntry];
+            setVariantList(updated);
+            set('variants', updated);   // ← use computed array, not stale state
         }
         setNewVariant({ attribute: selectedAttribute, value: '', color: '', stock: '', price: '' });
-        // Sync to form
-        set('variants', [...variantList]);
     };
 
     const removeVariant = (idx) => {
@@ -472,7 +625,8 @@ const VariantProductForm = ({ form, set, images, previewUrls, handleImageChange 
                                 {VARIANT_ATTRIBUTES.map(a => <option key={a} value={a}>{a}</option>)}
                             </SelectField>
                             <button type="button"
-                                onClick={() => setSelectedAttribute('')}
+                                onClick={addVariant}
+                                title="Add variant"
                                 className="w-10 h-10 flex items-center justify-center border-2 border-skyGreen text-skyGreen rounded-xl hover:bg-skyGreen hover:text-white transition-all font-bold text-lg">
                                 +
                             </button>
@@ -552,7 +706,7 @@ const VariantProductForm = ({ form, set, images, previewUrls, handleImageChange 
                                             )}
                                             <div>
                                                 <span className="text-sm font-medium text-gray-800">{v.attribute}: {v.value}</span>
-                                                <span className="ml-3 text-xs text-gray-500">Stock: {v.stock} &bull; ${v.price}</span>
+                                                <span className="ml-3 text-xs text-gray-500">Stock: {v.stock} &bull; ₹{v.price}</span>
                                             </div>
                                         </div>
                                         <button type="button" onClick={() => removeVariant(i)}
@@ -588,25 +742,7 @@ const VariantProductForm = ({ form, set, images, previewUrls, handleImageChange 
                     </div>
                 </Section>
 
-                {/* Media Upload */}
-                <Section title="Media">
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-8 cursor-pointer hover:border-skyGreen hover:bg-green-50/40 transition-all group">
-                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
-                        {previewUrls.length === 0 ? (
-                            <>
-                                <div className="w-14 h-14 rounded-2xl bg-gray-100 group-hover:bg-green-100 flex items-center justify-center mb-3 transition-colors">
-                                    <ImageIcon className="w-7 h-7 text-gray-400 group-hover:text-skyGreen transition-colors" />
-                                </div>
-                                <span className="text-sm font-semibold text-gray-600 group-hover:text-skyGreen transition-colors">Upload Images</span>
-                                <span className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB each</span>
-                            </>
-                        ) : (
-                            <div className="flex flex-wrap gap-3 justify-center">
-                                {previewUrls.map((url, i) => <img key={i} src={url} alt="" className="w-20 h-20 object-cover rounded-xl border border-gray-200 shadow-sm" />)}
-                            </div>
-                        )}
-                    </label>
-                </Section>
+                <ImageSorter images={images} previewUrls={previewUrls} handleImageChange={handleImageChange} />
             </div>
         </div>
     );
@@ -653,9 +789,18 @@ const CreateProductForm = ({ onCancel, onSuccess, editingProduct }) => {
     const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
 
     const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        setImages(files);
-        setPreviewUrls(files.map(f => URL.createObjectURL(f)));
+        // Support manual removal via _manual override
+        if (e._manual) {
+            setImages(e._manual.files);
+            setPreviewUrls(e._manual.urls);
+            return;
+        }
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        // Merge with existing previews (for multi-select across sessions)
+        const newUrls = files.map(f => URL.createObjectURL(f));
+        setImages(prev => [...prev, ...files]);
+        setPreviewUrls(prev => [...prev, ...newUrls]);
     };
 
     const handleSubmit = async (e) => {
@@ -817,7 +962,7 @@ const AdminProducts = () => {
                                         {product.subCategory && <span className="ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">{product.subCategory}</span>}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-gray-900">${product.price?.toFixed(2)}</div>
+                                        <div className="font-semibold text-gray-900">₹{product.price?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                                         {product.discount > 0 && <div className="text-xs text-green-600 font-medium">{product.discount}{product.discountType === 'percentage' ? '%' : ' flat'} off</div>}
                                     </td>
                                     <td className="px-6 py-4">

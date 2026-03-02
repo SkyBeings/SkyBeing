@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 const bannerSchema = new Schema(
     {
-        title: { type: String, required: true, trim: true },
+        title: { type: String, default: "", trim: true },
         subtitle: { type: String, default: "" },
         buttonText: { type: String, default: "Shop Now" },
         buttonLink: { type: String, default: "/shop" },

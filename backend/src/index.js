@@ -1,10 +1,8 @@
 import dotenv from "dotenv";
+dotenv.config({ path: './.env' });
+
 import connectDB from "./config/db.js";
 import { app } from "./app.js";
-
-dotenv.config({
-    path: './.env'
-})
 
 // Always start the server, even if DB connection fails
 app.listen(process.env.PORT || 8000, () => {

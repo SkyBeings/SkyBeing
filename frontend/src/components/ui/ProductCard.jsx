@@ -2,17 +2,19 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../store/slices/cartSlice';
+import { useToast } from './Toast';
 
 const ProductCard = ({ product }) => {
     const dispatch = useDispatch();
+    const toast = useToast();
 
     const handleAddToCart = async (e) => {
         e.preventDefault();
         try {
             await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
-            alert("Added to cart!");
+            toast.cart(product.name, { image: product.images?.[0] });
         } catch (error) {
-            alert(error || "Please login to add to cart");
+            toast.error(error || 'Please login to add to cart');
         }
     };
 

@@ -1,12 +1,48 @@
-import { useEffect } from 'react';
-import { MapPin, Phone, Clock, Instagram, Facebook } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Phone, Clock, Instagram, Facebook, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BannerCarousel from '../components/ui/BannerCarousel';
+import api from '../api/axios';
+import { useToast } from '../components/ui/Toast';
 
 const Contact = () => {
+    const toast = useToast();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+        phone: ''
+    });
+
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await api.post('/inquiries', formData);
+            toast.success("Message sent successfully! We'll get back to you soon.");
+            setFormData({
+                name: '',
+                email: '',
+                subject: '',
+                message: '',
+                phone: ''
+            });
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to send message. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="bg-white min-h-screen">
@@ -14,7 +50,7 @@ const Contact = () => {
             {/* ── Hero Banner — same style as Shop ──────────────────────── */}
             <BannerCarousel
                 page="contact"
-                height="h-[300px]"
+                height="md:h-[300px] lg:h-[400px]"
                 fallback={
                     <div className="h-[300px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
                         <div className="relative z-10 text-center">
@@ -106,11 +142,15 @@ const Contact = () => {
 
                     {/* ── Right: Form ────────────────────────────────── */}
                     <div className="lg:w-[64%] bg-white p-10">
-                        <form className="flex flex-col gap-5 w-full">
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
                             <div>
                                 <label className="block text-[#1a1a1a] font-medium mb-2 text-sm">Your name</label>
                                 <input
                                     type="text"
+                                    name="name"
+                                    required
+                                    value={formData.name}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 border border-gray-300 outline-none text-sm text-gray-700 placeholder-gray-400 focus:border-skyGreen transition"
                                     placeholder="Abc"
                                 />
@@ -119,22 +159,44 @@ const Contact = () => {
                                 <label className="block text-[#1a1a1a] font-medium mb-2 text-sm">Email address</label>
                                 <input
                                     type="email"
+                                    name="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 border border-gray-300 outline-none text-sm text-gray-700 placeholder-gray-400 focus:border-skyGreen transition"
                                     placeholder="Abc@def.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[#1a1a1a] font-medium mb-2 text-sm">Phone (Optional)</label>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border border-gray-300 outline-none text-sm text-gray-700 placeholder-gray-400 focus:border-skyGreen transition"
+                                    placeholder="+91 XXXXX XXXXX"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[#1a1a1a] font-medium mb-2 text-sm">Subject</label>
                                 <input
                                     type="text"
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 border border-gray-300 outline-none text-sm text-gray-700 placeholder-gray-400 focus:border-skyGreen transition"
-                                    placeholder="This is an optional"
+                                    placeholder="This is optional"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[#1a1a1a] font-medium mb-2 text-sm">Message</label>
                                 <textarea
+                                    name="message"
+                                    required
                                     rows="5"
+                                    value={formData.message}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 border border-gray-300 outline-none text-sm text-gray-700 placeholder-gray-400 resize-y focus:border-skyGreen transition"
                                     placeholder="Hi! I'd like to ask about"
                                 />
@@ -142,9 +204,14 @@ const Contact = () => {
                             <div className="mt-2">
                                 <button
                                     type="submit"
-                                    className="bg-skyGreen hover:bg-[#0c660b] text-white font-semibold py-3 px-14 transition text-sm"
+                                    disabled={loading}
+                                    className="bg-skyGreen hover:bg-[#0c660b] text-white font-semibold py-3 px-14 transition text-sm flex items-center gap-2 disabled:opacity-70"
                                 >
-                                    Submit
+                                    {loading ? 'Sending...' : (
+                                        <>
+                                            Submit <Send className="w-4 h-4" />
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

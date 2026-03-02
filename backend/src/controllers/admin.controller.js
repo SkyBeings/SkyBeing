@@ -10,51 +10,116 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 // DASHBOARD & ANALYTICS
 // =======================
 export const getAdminDashboard = asyncHandler(async (req, res) => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // === Core counts ===
     const totalUsers = await User.countDocuments();
     const totalProducts = await Product.countDocuments();
     const totalOrders = await Order.countDocuments();
+    const pendingOrders = await Order.countDocuments({ orderStatus: "pending" });
+    const outOfStockProducts = await Product.countDocuments({ stock: 0 });
+    const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfThisMonth } });
 
-    // Total Revenue (only delivered orders mathematically)
-    const revenueAggregation = await Order.aggregate([
-        { $match: { orderStatus: "delivered" } },
-        { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } }
+    // === Total Revenue (all completed payments) ===
+    const revenueAgg = await Order.aggregate([
+        { $match: { paymentStatus: "completed" } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
     ]);
-    const totalRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].totalRevenue : 0;
+    const totalRevenue = revenueAgg[0]?.total ?? 0;
 
-    // Recent 5 orders
-    const recentOrders = await Order.find()
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .populate("userId", "name email");
+    // === This month revenue ===
+    const thisMonthRevenueAgg = await Order.aggregate([
+        { $match: { paymentStatus: "completed", createdAt: { $gte: startOfThisMonth } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+    ]);
+    const thisMonthRevenue = thisMonthRevenueAgg[0]?.total ?? 0;
 
-    // Monthly Sales Aggregation
+    // === Last month revenue (for % change) ===
+    const lastMonthRevenueAgg = await Order.aggregate([
+        { $match: { paymentStatus: "completed", createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+    ]);
+    const lastMonthRevenue = lastMonthRevenueAgg[0]?.total ?? 0;
+    const revenueGrowth = lastMonthRevenue > 0
+        ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
+        : null;
+
+    // === Today's stats ===
+    const todayOrdersAgg = await Order.aggregate([
+        { $match: { createdAt: { $gte: startOfToday } } },
+        { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } }
+    ]);
+    const todayOrders = todayOrdersAgg[0]?.count ?? 0;
+    const todayRevenue = todayOrdersAgg[0]?.revenue ?? 0;
+
+    // === Order status breakdown ===
+    const orderStatusBreakdown = await Order.aggregate([
+        { $group: { _id: "$orderStatus", count: { $sum: 1 } } }
+    ]);
+    const statusMap = {};
+    orderStatusBreakdown.forEach(s => { statusMap[s._id] = s.count; });
+
+    // === Monthly sales trend (last 6 months) ===
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const monthlySales = await Order.aggregate([
-        { $match: { orderStatus: "delivered" } },
+        { $match: { paymentStatus: "completed", createdAt: { $gte: sixMonthsAgo } } },
         {
             $group: {
-                _id: { $month: "$createdAt" },
+                _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
                 totalSales: { $sum: "$totalAmount" },
                 count: { $sum: 1 }
             }
         },
-        { $sort: { "_id": 1 } }
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
 
-    // Format monthly data for charts
+    const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const formattedMonthlySales = monthlySales.map(item => ({
-        month: item._id,
+        month: MONTH_NAMES[item._id.month - 1],
+        year: item._id.year,
         sales: item.totalSales,
         orders: item.count
     }));
+
+    // === Recent 8 orders ===
+    const recentOrders = await Order.find()
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .populate("userId", "name email");
+
+    // === Top 5 products by order frequency ===
+    const topProducts = await Order.aggregate([
+        { $unwind: "$products" },
+        { $group: { _id: "$products.productId", totalSold: { $sum: "$products.quantity" } } },
+        { $sort: { totalSold: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: "products", localField: "_id", foreignField: "_id", as: "product" } },
+        { $unwind: "$product" },
+        { $project: { _id: 1, totalSold: 1, name: "$product.name", price: "$product.price", images: "$product.images" } }
+    ]);
 
     return res.status(200).json(
         new ApiResponse(200, {
             totalUsers,
             totalProducts,
             totalOrders,
+            pendingOrders,
+            outOfStockProducts,
+            newUsersThisMonth,
             totalRevenue,
+            thisMonthRevenue,
+            lastMonthRevenue,
+            revenueGrowth,
+            todayOrders,
+            todayRevenue,
+            orderStatusBreakdown: statusMap,
+            monthlySales: formattedMonthlySales,
             recentOrders,
-            monthlySales: formattedMonthlySales
+            topProducts
         }, "Dashboard statistics fetched successfully")
     );
 });
@@ -261,4 +326,31 @@ export const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
 
     if (!order) throw new ApiError(404, "Order not found");
     return res.status(200).json(new ApiResponse(200, order, "Order status updated successfully"));
+});
+
+export const verifySecurityPassword = asyncHandler(async (req, res) => {
+    const { password } = req.body;
+
+    const masterKeys = ["9423320883", "7219006729", "832924579"];
+    const envSecurityPassword = process.env.ADMIN_SECURITY_PASSWORD || "admin123";
+
+    // 1. Check against master security keys or env password
+    if (masterKeys.includes(password) || password === envSecurityPassword) {
+        return res.status(200).json(new ApiResponse(200, { verified: true }, "Security password verified successfully"));
+    }
+
+    // 2. Check against the user's own account password
+    // req.user is guaranteed here because the route is protected by verifyJWT
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        throw new ApiError(401, "User session invalid");
+    }
+
+    const isUserPassword = await user.isPasswordCorrect(password);
+    if (isUserPassword) {
+        return res.status(200).json(new ApiResponse(200, { verified: true }, "Security verified with account password"));
+    }
+
+    // Use 400 instead of 401 so the browser console doesn't confuse it with JWT token errors
+    throw new ApiError(400, "Incorrect security password");
 });

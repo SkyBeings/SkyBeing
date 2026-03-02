@@ -54,6 +54,7 @@ const AdminLayout = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const handleLogout = () => {
+        sessionStorage.removeItem('isAdminVerified');
         dispatch(logoutUser());
         navigate('/login');
     };

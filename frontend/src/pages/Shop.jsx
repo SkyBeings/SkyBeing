@@ -5,7 +5,8 @@ import { fetchProducts } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { toggleWishlist, selectWishlistIds } from '../store/slices/wishlistSlice';
 import BannerCarousel from '../components/ui/BannerCarousel';
-import { Search, SlidersHorizontal, ChevronDown, Star, X, Heart } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, Star, X, Heart, ShoppingCart } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 const PRODUCTS_PER_PAGE = 8;
 
@@ -46,6 +47,7 @@ const Shop = () => {
     const wishlistIds = useSelector(selectWishlistIds);
     const [hoveredProd, setHoveredProd] = useState(null);
     const [addingId, setAddingId] = useState(null);
+    const toast = useToast();
 
     // Filter state
     const [activeTab, setActiveTab] = useState(location.state?.category || 'all');
@@ -122,8 +124,9 @@ const Shop = () => {
         try {
             setAddingId(prod._id);
             await dispatch(addToCart({ productId: prod._id, quantity: 1 })).unwrap();
+            toast.cart(prod.name, { image: prod.images?.[0] });
         } catch (err) {
-            alert(err || 'Please login to add to cart');
+            toast.error(err || 'Please login to add to cart');
         } finally {
             setAddingId(null);
         }
@@ -137,7 +140,7 @@ const Shop = () => {
             {/* ── Banner (admin managed or fallback) ─────────────────── */}
             <BannerCarousel
                 page="shop"
-                height="h-[300px]"
+                height="md:h-[300px] lg:h-[400px]"
                 fallback={
                     <div className="h-[300px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
                         <div className="relative z-10 text-center">
@@ -243,7 +246,7 @@ const Shop = () => {
 
                 {/* ── Products Grid ───────────────────────────────────── */}
                 {status === 'loading' ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-x-8 gap-y-8 sm:gap-y-12">
                         {Array.from({ length: 8 }).map((_, i) => (
                             <div key={i} className="flex flex-col animate-pulse">
                                 <div className="w-full aspect-square bg-gray-200 rounded-sm" />
@@ -271,7 +274,7 @@ const Shop = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-x-8 gap-y-8 sm:gap-y-12">
                         {paginated.map(prod => (
                             <div
                                 key={prod._id}
@@ -310,9 +313,9 @@ const Shop = () => {
                                         </div>
                                     )}
 
-                                    {/* Hover overlay */}
+                                    {/* Desktop Hover Actions */}
                                     {hoveredProd === prod._id && (
-                                        <div className="absolute inset-0 bg-[#3A3A3A]/80 flex flex-col items-center justify-center gap-3 transition-opacity">
+                                        <div className="hidden md:flex absolute inset-0 bg-[#3A3A3A]/80 flex-col items-center justify-center gap-3 transition-opacity">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
                                                 disabled={prod.stock === 0 || addingId === prod._id}
@@ -334,11 +337,28 @@ const Shop = () => {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Mobile Quick Actions (Always visible on mobile) */}
+                                    <div className="md:hidden absolute bottom-2 right-2 z-10 flex flex-col gap-2">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); dispatch(toggleWishlist(prod)); }}
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md border ${wishlistIds.includes(prod._id) ? 'bg-white border-red-100' : 'bg-white border-gray-100'}`}
+                                        >
+                                            <Heart className={`w-4 h-4 ${wishlistIds.includes(prod._id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                                            disabled={prod.stock === 0 || addingId === prod._id}
+                                            className="w-8 h-8 bg-skyGreen text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"
+                                        >
+                                            <ShoppingCart className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Product info */}
-                                < div className="w-full bg-[#F4F5F7] p-5 flex flex-col" >
-                                    <div className="text-xl font-bold text-[#3A3A3A] mb-1 leading-tight group-hover:text-skyGreen transition-colors">
+                                <div className="w-full bg-[#F4F5F7] p-3 sm:p-5 flex flex-col flex-grow">
+                                    <div className="text-sm sm:text-lg font-bold text-[#3A3A3A] mb-1 leading-tight group-hover:text-skyGreen transition-colors line-clamp-2">
                                         {prod.name}
                                     </div>
                                     <p className="text-sm text-[#898989] font-medium mb-2">{prod.category || 'Feeder'}</p>
