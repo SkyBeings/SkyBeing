@@ -18,12 +18,17 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 
     const imageLocalPaths = req.files?.map(file => file.path) || [];
+    console.log(`[createProduct] files received: ${imageLocalPaths.length}`, imageLocalPaths);
+    console.log(`[createProduct] CLOUDINARY_CLOUD_NAME: ${process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'MISSING'}`);
 
     const uploadedImages = [];
-    for (const path of imageLocalPaths) {
-        const uploaded = await uploadOnCloudinary(path);
+    for (const localPath of imageLocalPaths) {
+        console.log(`[createProduct] Uploading: ${localPath}`);
+        const uploaded = await uploadOnCloudinary(localPath);
+        console.log(`[createProduct] Upload result:`, uploaded?.url || 'FAILED - no URL returned');
         if (uploaded?.url) uploadedImages.push(uploaded.url);
     }
+    console.log(`[createProduct] Final uploaded images:`, uploadedImages);
 
     // Parse tags if sent as JSON string
     let parsedTags = [];
