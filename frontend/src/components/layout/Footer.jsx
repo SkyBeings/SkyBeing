@@ -10,20 +10,18 @@ const Footer = () => {
 
                     {/* Left: Brand Info */}
                     <div>
-                        <h2 className="text-[32px] font-bold text-[#0E7A0D] mb-6 tracking-tight">SkyBeing</h2>
-                        <p className="text-[17px] text-[#8C5D3A] mb-5 font-medium">
-                            Welcome to SkyBeing, a home for birds in your everyday spaces.
-                        </p>
+                        <h2 className="text-[32px] font-bold text-[#0E7A0D] mb-6 tracking-tight">SkyBeings</h2>
+
                         <p className="text-[#4A4A4A] text-[15px] leading-relaxed mb-8 max-w-md">
                             We design thoughtful bird feeders that bring nature closer to
                             balconies, gardens, and homes. Crafted in India with care, every
-                            SkyBeing product blends beauty, durability, and bird comfort.
+                            SkyBeings product blends beauty, durability, and bird comfort.
                         </p>
                         <div className="flex space-x-4">
                             <a href="https://www.facebook.com/share/18BuUErAsw/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-[#0E7A0D] hover:text-[#0c660b] transition">
                                 <Facebook className="w-7 h-7" strokeWidth={1.5} />
                             </a>
-                            <a href="https://www.instagram.com/skybeingss?igsh=eGZkMmNvbTl1NDll&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-[#0E7A0D] hover:text-[#0c660b] transition">
+                            <a href="https://www.instagram.com/skybeingsss?igsh=eGZkMmNvbTl1NDll&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-[#0E7A0D] hover:text-[#0c660b] transition">
                                 <Instagram className="w-7 h-7" strokeWidth={1.5} />
                             </a>
                         </div>
@@ -36,7 +34,7 @@ const Footer = () => {
                             <li>Call: +91 721 900 6729</li>
                             <li>WhatsApp: +91 721 900 6729</li>
                             <li>Support Time: 24/7</li>
-                            <li>Email: Skybeings422209@gmail.com</li>
+                            <li>Email: Skybeingss422209@gmail.com</li>
                             <li>Address: 6624/6, CHINCHKHED ROAD, BRAMHAA VALLEY SCHOOL, SAMBHAJI NAGAR, PIMPALGAON BASWANT, NASHIK, MAHARASHTRA-422209</li>
                         </ul>
                     </div>

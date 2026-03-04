@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Camera, X } from 'lucide-react';
 import api from '../api/axios';
-import BirdLoader from '../components/ui/BirdLoader';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
+import BannerCarousel from '../components/ui/BannerCarousel';
 
 const Gallery = () => {
     const [images, setImages] = useState([]);
@@ -24,18 +25,23 @@ const Gallery = () => {
 
     return (
         <div className="bg-[#FAFAFA] min-h-screen pb-24">
-            {/* Header */}
-            <div className="bg-[#FCECD8] pt-28 pb-16 text-center shadow-inner">
-                <Camera className="w-10 h-10 text-skyBrown mx-auto mb-4 opacity-80" />
-                <h1 className="text-4xl md:text-5xl font-extrabold text-[#3A3A3A] mb-4">Our Birds Gallery</h1>
-                <p className="text-lg text-gray-700 font-medium max-w-xl mx-auto px-4">
-                    A beautiful collection of our feathered visitors captured in their natural elements.
-                </p>
-            </div>
+            {/* Header — Admin-managed banner or fallback */}
+            <BannerCarousel
+                page="gallery"
+                fallback={
+                    <div className="bg-[#FCECD8] pt-28 pb-16 text-center shadow-inner">
+                        <Camera className="w-10 h-10 text-skyBrown mx-auto mb-4 opacity-80" />
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-[#3A3A3A] mb-4">Our Birds Gallery</h1>
+                        <p className="text-lg text-gray-700 font-medium max-w-xl mx-auto px-4">
+                            A beautiful collection of our feathered visitors captured in their natural elements.
+                        </p>
+                    </div>
+                }
+            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
                 {loading ? (
-                    <BirdLoader text="Loading Gallery..." className="py-20" />
+                    <SkeletonLoader text="Loading Gallery..." className="py-20" />
                 ) : images.length === 0 ? (
                     <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <Camera className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -78,24 +84,24 @@ const Gallery = () => {
 
             {/* Lightbox Modal */}
             {selectedImage && (
-                <div 
+                <div
                     className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <button 
+                    <button
                         className="absolute top-6 right-6 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition"
                         onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
                     >
                         <X className="w-6 h-6" />
                     </button>
-                    
-                    <div 
+
+                    <div
                         className="max-w-5xl w-full max-h-[85vh] flex flex-col items-center justify-center"
                         onClick={e => e.stopPropagation()} // prevent closing when clicking image
                     >
-                        <img 
-                            src={selectedImage.imageUrl} 
-                            alt={selectedImage.caption} 
+                        <img
+                            src={selectedImage.imageUrl}
+                            alt={selectedImage.caption}
                             className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl"
                         />
                         {selectedImage.caption && (

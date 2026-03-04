@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trash } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCart, updateCartQuantity, removeFromCart } from '../store/slices/cartSlice';
+import BannerCarousel from '../components/ui/BannerCarousel';
 
 const Cart = () => {
     const dispatch = useDispatch();
@@ -17,15 +18,19 @@ const Cart = () => {
     return (
         <div className="bg-white min-h-screen">
 
-            {/* Banner */}
-            <div className="h-[250px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[url('https://via.placeholder.com/1500x500?text=Bg')] bg-cover bg-center"></div>
-                <div className="relative z-10 text-center flex flex-col items-center">
-                    <div className="w-12 h-12 bg-black font-extrabold text-white flex items-center justify-center rounded-full mb-2">S</div>
-                    <h1 className="text-4xl text-black mb-2 font-medium tracking-wide">Cart</h1>
-                    <p className="text-sm text-black font-medium tracking-wider"><span className="font-bold">Home</span> &gt; Cart</p>
-                </div>
-            </div>
+            {/* Banner — Admin-managed or fallback */}
+            <BannerCarousel
+                page="cart"
+                fallback={
+                    <div className="h-[250px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="relative z-10 text-center flex flex-col items-center">
+                            <div className="w-12 h-12 bg-black font-extrabold text-white flex items-center justify-center rounded-full mb-2">S</div>
+                            <h1 className="text-4xl text-black mb-2 font-medium tracking-wide">Cart</h1>
+                            <p className="text-sm text-black font-medium tracking-wider"><Link to="/" className="font-bold hover:underline transition">Home</Link> &gt; Cart</p>
+                        </div>
+                    </div>
+                }
+            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -105,9 +110,22 @@ const Cart = () => {
                                 <span className="text-xl text-[#B88E2F] font-medium">Rs. {totalAmount.toFixed(2)}</span>
                             </div>
 
-                            <Link to="/checkout" className="border border-black rounded-xl hover:bg-black hover:text-white transition w-56 py-3 text-center text-black font-medium text-lg">
-                                Check Out
-                            </Link>
+                            {items.length > 0 ? (
+                                <Link
+                                    to="/checkout"
+                                    className="border border-black rounded-xl hover:bg-black hover:text-white transition w-56 py-3 text-center text-black font-medium text-lg"
+                                >
+                                    Check Out
+                                </Link>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="border border-gray-200 rounded-xl w-56 py-3 text-center text-gray-300 font-medium text-lg cursor-not-allowed bg-gray-50"
+                                    title="Add items to your cart first"
+                                >
+                                    Check Out
+                                </button>
+                            )}
                         </div>
                     </div>
 

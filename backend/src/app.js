@@ -45,7 +45,7 @@ app.use(cookieParser());
 
 // Base Route
 app.get("/", (req, res) => {
-    res.send("SkyBeing API is running...");
+    res.send("SkyBeings API is running...");
 });
 
 // Routes Import

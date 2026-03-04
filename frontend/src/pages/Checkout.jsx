@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart, clearCartLocal } from '../store/slices/cartSlice';
 import api from '../api/axios';
 import { useToast } from '../components/ui/Toast';
+import BannerCarousel from '../components/ui/BannerCarousel';
 
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -21,6 +22,7 @@ const Checkout = () => {
     const { items, totalAmount, status } = useSelector(state => state.cart);
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('cod');
+    const [shipToDifferent, setShipToDifferent] = useState(false);
     const toast = useToast();
 
     useEffect(() => {
@@ -38,7 +40,20 @@ const Checkout = () => {
             setLoading(true);
             const formData = new FormData(e.target);
 
-            const shippingAddress = {
+            // Collect customer details from form
+            const customerName = `${formData.get('firstName') || ''} ${formData.get('lastName') || ''}`.trim();
+            const customerEmail = formData.get('email') || '';
+            const customerPhone = formData.get('phone') || '';
+            const orderNotes = formData.get('orderNotes') || '';
+
+            // Use alternate shipping address if checkbox is ticked, otherwise use billing address
+            const shippingAddress = shipToDifferent ? {
+                street: formData.get('ship_street') || '',
+                city: formData.get('ship_city') || '',
+                state: formData.get('ship_state') || '',
+                country: 'India',
+                zipCode: formData.get('ship_pinCode') || ''
+            } : {
                 street: formData.get('street') || '',
                 city: formData.get('city') || '',
                 state: formData.get('state') || '',
@@ -51,28 +66,44 @@ const Checkout = () => {
                 quantity: i.quantity
             }));
 
-            // Submit order to the generic /orders or guest endpoint
-            const orderRes = await api.post('/orders/guest', { shippingAddress, cartItems, paymentMethod });
+            // Create order in our DB first
+            const orderRes = await api.post('/orders/guest', {
+                shippingAddress,
+                cartItems,
+                paymentMethod,
+                customerName,
+                customerEmail,
+                customerPhone,
+                orderNotes,
+            });
             const orderId = orderRes.data.data._id;
 
             if (paymentMethod === 'online') {
-                const res = await loadRazorpayScript();
-                if (!res) {
-                    toast.error('Razorpay SDK failed to load. Please check your internet connection.');
+                // Load Razorpay SDK
+                const sdkLoaded = await loadRazorpayScript();
+                if (!sdkLoaded) {
+                    toast.error('Razorpay SDK failed to load. Check your internet connection.');
                     setLoading(false);
                     return;
                 }
 
-                // Call backend to create Razorpay Order
+                // Create Razorpay order on backend
                 const rzpRes = await api.post('/payments/create-order', { orderId });
                 const { id: rzpOrderId, amount, currency, key_id } = rzpRes.data.data;
+
+                if (!key_id) {
+                    toast.error('Razorpay key not configured. Please contact support.');
+                    setLoading(false);
+                    return;
+                }
 
                 const options = {
                     key: key_id,
                     amount: amount,
                     currency: currency,
-                    name: "Skybeing",
+                    name: "SkyBeings",
                     description: "Order Payment",
+                    image: "/logo-cropped.png",
                     order_id: rzpOrderId,
                     handler: async function (response) {
                         try {
@@ -82,68 +113,92 @@ const Checkout = () => {
                                 razorpay_signature: response.razorpay_signature,
                                 orderId: orderId
                             });
+
+                            // Track Purchase Events
+                            if (window.fbq) window.fbq('track', 'Purchase', { value: totalAmount, currency: 'INR' });
+                            if (window.gtag) window.gtag('event', 'purchase', { value: totalAmount, currency: 'INR', transaction_id: orderId });
+
                             dispatch(clearCartLocal());
-                            toast.success('Payment successful! Your order has been placed.', { duration: 4000 });
+                            toast.success('🎉 Payment successful! Your order has been placed.', { duration: 5000 });
                             navigate('/');
                         } catch (err) {
-                            console.error(err);
-                            toast.error('Payment verification failed! Please contact support.');
-                            navigate('/');
+                            console.error('Payment verification error:', err);
+                            toast.error('Payment verification failed! Please contact support with your payment ID: ' + response.razorpay_payment_id);
                         }
                     },
                     prefill: {
-                        name: "Customer",
-                        email: "customer@example.com",
+                        name: customerName || 'Customer',
+                        email: customerEmail || '',
+                        contact: customerPhone || '',
+                    },
+                    notes: {
+                        orderId: orderId,
                     },
                     theme: {
                         color: "#0E7A0D"
                     },
+                    modal: {
+                        ondismiss: function () {
+                            // User closed modal without paying
+                            setLoading(false);
+                            toast.error('Payment cancelled. Your order is saved — complete payment to confirm.');
+                        }
+                    }
                 };
 
+                setLoading(false); // Re-enable button while Razorpay modal is open
                 const paymentObject = new window.Razorpay(options);
-                paymentObject.on('payment.failed', function () {
-                    toast.error('Payment failed. Please try again.');
+                paymentObject.on('payment.failed', function (response) {
+                    toast.error(`Payment failed: ${response.error?.description || 'Please try again.'}`);
                 });
                 paymentObject.open();
 
             } else {
+                // COD flow
+                if (window.fbq) window.fbq('track', 'Purchase', { value: totalAmount, currency: 'INR' });
+                if (window.gtag) window.gtag('event', 'purchase', { value: totalAmount, currency: 'INR', transaction_id: orderId });
+
                 dispatch(clearCartLocal());
-                toast.success('Order placed successfully! (Cash on Delivery)', { duration: 4000 });
+                toast.success('✅ Order placed successfully! Cash on Delivery.', { duration: 5000 });
                 navigate('/');
             }
         } catch (error) {
-            console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to place order');
-        } finally {
+            console.error('Order error:', error);
+            toast.error(error.response?.data?.message || 'Failed to place order. Please try again.');
             setLoading(false);
         }
     };
 
+
     return (
         <div className="bg-white min-h-screen text-[#333] font-sans">
-            {/* Header / Banner */}
-            <div className="pt-20 pb-16 text-center">
-                <div className="flex justify-center items-center gap-2 mb-3">
-                    <h1 className="text-4xl text-black font-normal tracking-wide relative">
-                        Checkout
-                        {/* Little decorative branch/bird pseudo-element for flavor */}
-                        <div className="absolute -top-6 -right-10 w-12 h-12 opacity-80 pointer-events-none">
-                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10,80 Q40,60 80,30" stroke="#7E9F6E" strokeWidth="3" strokeLinecap="round" />
-                                <circle cx="30" cy="65" r="4" fill="#7E9F6E" />
-                                <circle cx="55" cy="45" r="4" fill="#7E9F6E" />
-                                <circle cx="75" cy="20" r="5" fill="#7E9F6E" />
-                                <path d="M90,30 Q95,45 80,55" fill="#C9A388" />
-                            </svg>
+            {/* Header / Banner — Admin-managed or fallback */}
+            <BannerCarousel
+                page="checkout"
+                fallback={
+                    <div className="pt-20 pb-16 text-center">
+                        <div className="flex justify-center items-center gap-2 mb-3">
+                            <h1 className="text-4xl text-black font-normal tracking-wide relative">
+                                Checkout
+                                <div className="absolute -top-6 -right-10 w-12 h-12 opacity-80 pointer-events-none">
+                                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M10,80 Q40,60 80,30" stroke="#7E9F6E" strokeWidth="3" strokeLinecap="round" />
+                                        <circle cx="30" cy="65" r="4" fill="#7E9F6E" />
+                                        <circle cx="55" cy="45" r="4" fill="#7E9F6E" />
+                                        <circle cx="75" cy="20" r="5" fill="#7E9F6E" />
+                                        <path d="M90,30 Q95,45 80,55" fill="#C9A388" />
+                                    </svg>
+                                </div>
+                            </h1>
                         </div>
-                    </h1>
-                </div>
-                <p className="text-[13px] font-medium text-gray-400">
-                    <Link to="/" className="hover:text-black transition">Home</Link> <span className="mx-1">/</span>
-                    <Link to="/shop" className="hover:text-black transition">Shop</Link> <span className="mx-1">/</span>
-                    <span className="text-black font-semibold">Shopping Cart</span>
-                </p>
-            </div>
+                        <p className="text-[13px] font-medium text-gray-400">
+                            <Link to="/" className="hover:text-black transition">Home</Link> <span className="mx-1">/</span>
+                            <Link to="/shop" className="hover:text-black transition">Shop</Link> <span className="mx-1">/</span>
+                            <span className="text-black font-semibold">Shopping Cart</span>
+                        </p>
+                    </div>
+                }
+            />
 
             <div className="max-w-[1100px] mx-auto px-6 pb-24">
                 <div className="flex flex-col lg:flex-row gap-16 item-start">
@@ -158,11 +213,11 @@ const Checkout = () => {
                                 {/* Row 1 */}
                                 <div className="relative">
                                     <label className="block text-[13px] font-bold text-black mb-2">First name <span className="text-red-500">*</span></label>
-                                    <input type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                    <input name="firstName" type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
                                 </div>
                                 <div className="relative">
                                     <label className="block text-[13px] font-bold text-black mb-2">Last name <span className="text-red-500">*</span></label>
-                                    <input type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                    <input name="lastName" type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
                                 </div>
 
                                 {/* Row 2 */}
@@ -202,44 +257,94 @@ const Checkout = () => {
                                 </div>
                                 <div className="relative">
                                     <label className="block text-[13px] font-bold text-black mb-2">Whatsapp Phone Number <span className="text-red-500">*</span></label>
-                                    <input type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                    <input name="phone" type="tel" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
                                 </div>
 
                                 {/* Row 5 */}
                                 <div className="relative">
-                                    <label className="block text-[13px] font-bold text-black mb-2">Alternate Contact Number <span className="text-red-500">*</span></label>
-                                    <input type="text" required className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                    <label className="block text-[13px] font-bold text-black mb-2">Alternate Contact Number <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                    <input type="text" className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
                                 </div>
                                 <div className="relative">
                                     <label className="block text-[13px] font-bold text-black mb-2">Email <span className="text-red-500">*</span></label>
-                                    <input type="email" required placeholder="example@gmail.com" className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] transition-colors" />
+                                    <input name="email" type="email" required placeholder="example@gmail.com" className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] transition-colors" />
                                 </div>
                             </div>
 
                             {/* Checkboxes */}
-                            <div className="flex flex-col gap-6 mt-14">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <div className="relative flex items-center justify-center">
-                                        <input type="checkbox" required className="w-3.5 h-3.5 border border-gray-300 rounded-sm outline-none appearance-none checked:bg-black checked:border-black transition-colors" />
+                            <div className="flex flex-col gap-5 mt-14">
+                                {/* Create account — optional, cosmetic only */}
+                                <label className="flex items-center gap-3 cursor-pointer select-none">
+                                    <div className="relative flex items-center justify-center shrink-0">
+                                        <input type="checkbox" className="w-3.5 h-3.5 border border-gray-300 rounded-sm outline-none appearance-none checked:bg-black checked:border-black transition-colors" />
                                         <svg className="absolute w-2.5 h-2.5 text-white pointer-events-none opacity-0" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
                                         <style>{`input:checked + svg { opacity: 1; }`}</style>
                                     </div>
-                                    <span className="font-bold text-[13px] text-[#333]">Create an account? <span className="text-red-500">*</span></span>
+                                    <span className="font-bold text-[13px] text-[#333]">Create an account? <span className="text-gray-400 font-normal">(Optional)</span></span>
                                 </label>
 
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <div className="relative flex items-center justify-center">
-                                        <input type="checkbox" required className="w-3.5 h-3.5 border border-gray-300 rounded-sm outline-none appearance-none checked:bg-black checked:border-black transition-colors" />
+                                {/* Ship to different address — functional toggle */}
+                                <label className="flex items-center gap-3 cursor-pointer select-none">
+                                    <div className="relative flex items-center justify-center shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={shipToDifferent}
+                                            onChange={e => setShipToDifferent(e.target.checked)}
+                                            className="w-3.5 h-3.5 border border-gray-300 rounded-sm outline-none appearance-none checked:bg-black checked:border-black transition-colors"
+                                        />
                                         <svg className="absolute w-2.5 h-2.5 text-white pointer-events-none opacity-0" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
                                     </div>
-                                    <span className="font-bold text-[13px] text-[#333]">Ship to a different address? <span className="text-red-500">*</span></span>
+                                    <span className="font-bold text-[13px] text-[#333]">Ship to a different address? <span className="text-gray-400 font-normal">(Optional)</span></span>
                                 </label>
                             </div>
 
-                            {/* Order Notes */}
+                            {/* ── Alternate Shipping Address (shown only when checkbox is ticked) ── */}
+                            {shipToDifferent && (
+                                <div className="mt-8 p-5 border border-dashed border-gray-300 rounded-lg bg-gray-50/60 space-y-6">
+                                    <h3 className="text-[13px] font-bold text-black uppercase tracking-wider">Shipping Address</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                        <div className="relative">
+                                            <label className="block text-[13px] font-bold text-black mb-2">Street address <span className="text-red-500">*</span></label>
+                                            <input name="ship_street" type="text" required={shipToDifferent} placeholder="House number and street name" className="w-full border-0 border-b border-gray-300 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] transition-colors" />
+                                        </div>
+                                        <div className="relative">
+                                            <label className="block text-[13px] font-bold text-black mb-2">Apartment, suite, unit, etc.</label>
+                                            <input name="ship_apartment" type="text" placeholder="Optional" className="w-full border-0 border-b border-gray-300 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] transition-colors" />
+                                        </div>
+                                        <div className="relative">
+                                            <label className="block text-[13px] font-bold text-black mb-2">Town / City <span className="text-red-500">*</span></label>
+                                            <input name="ship_city" type="text" required={shipToDifferent} className="w-full border-0 border-b border-gray-300 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                        </div>
+                                        <div className="relative">
+                                            <label className="block text-[13px] font-bold text-black mb-2">State <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <select name="ship_state" required={shipToDifferent} defaultValue="" className="w-full border-0 border-b border-gray-300 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 text-gray-800 text-[13px] cursor-pointer appearance-none transition-colors">
+                                                    <option value="" disabled>Select a state</option>
+                                                    <option value="mh">Maharashtra</option>
+                                                    <option value="dl">Delhi</option>
+                                                    <option value="ka">Karnataka</option>
+                                                    <option value="gj">Gujarat</option>
+                                                    <option value="rj">Rajasthan</option>
+                                                    <option value="up">Uttar Pradesh</option>
+                                                    <option value="tn">Tamil Nadu</option>
+                                                </select>
+                                                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <svg className="w-2.5 h-2.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06 0L10 10.94l3.71-3.73a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 010-1.06z" clipRule="evenodd" /></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <label className="block text-[13px] font-bold text-black mb-2">PIN Code <span className="text-red-500">*</span></label>
+                                            <input name="ship_pinCode" type="text" required={shipToDifferent} className="w-full border-0 border-b border-gray-300 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 transition-colors" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Order Notes — optional */}
                             <div className="mt-8">
-                                <label className="block text-[13px] font-bold text-black mb-2">Order notes <span className="text-red-500">*</span></label>
-                                <textarea required rows="2" placeholder="Notes about your order, e.g. special notes for delivery." className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] resize-none transition-colors" />
+                                <label className="block text-[13px] font-bold text-black mb-2">Order notes <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                <textarea name="orderNotes" rows="2" placeholder="Notes about your order, e.g. special notes for delivery." className="w-full border-0 border-b border-gray-200 rounded-none outline-none focus:ring-0 focus:border-black bg-transparent py-2 placeholder-gray-400 text-[13px] resize-none transition-colors" />
                             </div>
 
                         </form>

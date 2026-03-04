@@ -1,10 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import BannerCarousel from '../components/ui/BannerCarousel';
 import { Leaf, HeartHandshake, Sprout, Bird } from 'lucide-react';
+import api from '../api/axios';
 
 const AboutUs = () => {
+    const [contentImage, setContentImage] = useState(null);
+
     useEffect(() => {
         window.scrollTo(0, 0);
+        // Fetch the about-content image from admin banners
+        api.get('/banners/active?page=about-content')
+            .then(res => {
+                const banners = res.data?.data || [];
+                if (banners.length > 0) setContentImage(banners[0].imageUrl);
+            })
+            .catch(() => { });
     }, []);
 
     return (
@@ -33,9 +43,9 @@ const AboutUs = () => {
                     {/* Story Image */}
                     <div className="w-full lg:w-1/2 relative">
                         <img
-                            src="https://images.unsplash.com/photo-1452570053594-1b985d6ea890?auto=format&fit=crop&q=80&w=800"
-                            alt="Bird house in nature"
-                            className="w-full h-[500px] object-cover rounded-2xl shadow-xl"
+                            src={contentImage || '/about-founder.jpg'}
+                            alt="Aman Shah, Founder of SkyBeings"
+                            className="w-full h-[500px] md:h-[650px] object-cover rounded-2xl shadow-xl border border-gray-100"
                         />
                         {/* Decorative badge */}
                         <div className="absolute -bottom-6 -right-6 lg:-bottom-10 lg:-right-10 bg-[#0E7A0D] text-white w-32 h-32 rounded-full hidden md:flex flex-col items-center justify-center shadow-2xl border-8 border-white">
@@ -48,18 +58,13 @@ const AboutUs = () => {
                     <div className="w-full lg:w-1/2">
                         <h2 className="text-[#0E7A0D] font-bold tracking-widest uppercase text-sm mb-3">Our Story</h2>
                         <h3 className="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] mb-6 leading-tight">
-                            Bringing Nature Closer to Your Everyday Spaces.
+                            A Dream to Protect Birds.
                         </h3>
                         <p className="text-[#4A4A4A] text-[16px] leading-relaxed mb-6 font-medium">
-                            SkyBeing was born from a simple yet profound belief: humans and nature are meant to coexist beautifully.
-                            In today's fast-paced urban world, we noticed a growing disconnect from the gentle wildlife that shares
-                            our environment—especially birds. We set out to bridge that gap.
+                            SkyBeings was founded in 2021 by Aman Shah, Founder and CEO, with a simple dream: to bring joy and safety to birds through thoughtfully designed bird feeders, homes, and water feeders. Each product is born from deep research and a love for nature. Under my leadership, we’ve grown to offer some of the best bird feeders in India and worldwide, earning top ratings on Amazon as a Best Choice.
                         </p>
                         <p className="text-[#4A4A4A] text-[16px] leading-relaxed mb-8 font-medium">
-                            Based in India, our team of passionate craftsmen and nature enthusiasts design thoughtful, durable, and
-                            aesthetically pleasing bird feeders, baths, and homes. Every SkyBeing product is meticulously crafted
-                            to blend seamlessly into modern balconies and lush gardens alike, ensuring absolute comfort for our
-                            feathered friends.
+                            Our success started from zero, driven by a passion for quality and a dream to protect birds. Today, we aim to create a world where every garden is a sanctuary. Join us as we grow, hand in hand with nature, and make a difference—one bird at a time.
                         </p>
 
                         <div className="flex items-center gap-4 text-[#1a1a1a] p-4 bg-[#F9F1E7] rounded-xl border border-[#E8D8C5] inline-flex">
@@ -85,7 +90,7 @@ const AboutUs = () => {
                             Our Core Values
                         </h3>
                         <p className="text-[#898989] max-w-2xl mx-auto text-base">
-                            Everything we do at SkyBeing is guided by a commitment to quality, community, and the environment.
+                            Everything we do at SkyBeings is guided by a commitment to quality, community, and the environment.
                         </p>
                     </div>
 
@@ -122,7 +127,7 @@ const AboutUs = () => {
                             <h4 className="text-xl font-bold text-[#1a1a1a] mb-4">Local Craftsmanship</h4>
                             <p className="text-[#666] leading-relaxed text-sm">
                                 We are proudly rooted in India. We empower local artisans to hand-finish our products, bringing
-                                a unique, deeply human touch to every single SkyBeing piece.
+                                a unique, deeply human touch to every single SkyBeings piece.
                             </p>
                         </div>
                     </div>

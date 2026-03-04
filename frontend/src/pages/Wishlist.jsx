@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toggleWishlist } from '../store/slices/wishlistSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { useState } from 'react';
+import BannerCarousel from '../components/ui/BannerCarousel';
 
 const Wishlist = () => {
     const dispatch = useDispatch();
@@ -23,15 +24,20 @@ const Wishlist = () => {
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Page Header */}
-            <div className="h-[200px] bg-[#FCECD8] w-full flex flex-col items-center justify-center">
-                <h1 className="text-4xl font-bold text-black mb-2">Wishlist</h1>
-                <p className="text-black font-semibold text-sm">
-                    <Link to="/" className="hover:underline">Home</Link>
-                    <span className="mx-2">›</span>
-                    Wishlist
-                </p>
-            </div>
+            {/* Page Header — Admin-managed banner or fallback */}
+            <BannerCarousel
+                page="wishlist"
+                fallback={
+                    <div className="h-[200px] bg-[#FCECD8] w-full flex flex-col items-center justify-center">
+                        <h1 className="text-4xl font-bold text-black mb-2">Wishlist</h1>
+                        <p className="text-black font-semibold text-sm">
+                            <Link to="/" className="hover:underline">Home</Link>
+                            <span className="mx-2">›</span>
+                            Wishlist
+                        </p>
+                    </div>
+                }
+            />
 
             <div className="max-w-5xl mx-auto px-4 py-12">
                 {items.length === 0 ? (

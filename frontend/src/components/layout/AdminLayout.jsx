@@ -63,9 +63,9 @@ const AdminLayout = () => {
         <div className="flex flex-col h-full bg-white border-r border-gray-200">
             {/* Logo */}
             <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-100 flex-shrink-0">
-                <img src="/logo-cropped.png" alt="SkyBeing" className="h-10 w-auto object-contain scale-110" />
+                <img src="/logo-cropped.png" alt="SkyBeings" className="h-10 w-auto object-contain scale-110" />
                 <div>
-                    <span className="text-lg font-bold text-gray-900 tracking-wide">SkyBeing</span>
+                    <span className="text-lg font-bold text-gray-900 tracking-wide">SkyBeings</span>
                     <p className="text-[10px] text-skyGreen font-semibold uppercase tracking-widest leading-none">Admin Panel</p>
                 </div>
             </div>

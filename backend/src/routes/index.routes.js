@@ -11,6 +11,8 @@ import galleryRouter from "./gallery.routes.js";
 import statsRouter from "./stats.routes.js";
 import blogRouter from "./blog.routes.js";
 import inquiryRouter from "./inquiry.routes.js";
+import shiprocketRouter from "./shiprocket.routes.js";
+import settingsRouter from "./settings.routes.js";
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.use("/gallery", galleryRouter);
 router.use("/stats", statsRouter);
 router.use("/blogs", blogRouter);
 router.use("/inquiries", inquiryRouter);
+router.use("/shiprocket", shiprocketRouter);
+router.use("/settings", settingsRouter);
 
 export default router;

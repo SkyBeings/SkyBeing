@@ -85,8 +85,8 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
         orders: item.count
     }));
 
-    // === Recent 8 orders ===
-    const recentOrders = await Order.find()
+    // === Recent 8 orders (confirmed only) ===
+    const recentOrders = await Order.find({ isConfirmed: true })
         .sort({ createdAt: -1 })
         .limit(8)
         .populate("userId", "name email");
@@ -273,7 +273,8 @@ export const adminDeleteProduct = asyncHandler(async (req, res) => {
 export const adminGetOrders = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, status, startDate, endDate } = req.query;
 
-    let query = {};
+    // Only show confirmed orders (COD = confirmed on placement, online = confirmed after payment)
+    let query = { isConfirmed: true };
     if (status) query.orderStatus = status;
     if (startDate && endDate) {
         query.createdAt = {
@@ -318,14 +319,55 @@ export const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid status provided. Allowed: pending, processing, shipped, delivered, cancelled");
     }
 
-    const order = await Order.findByIdAndUpdate(
-        req.params.id,
-        { $set: { orderStatus: status.toLowerCase() } },
-        { new: true }
-    );
-
+    const order = await Order.findById(req.params.id);
     if (!order) throw new ApiError(404, "Order not found");
+
+    const newStatus = status.toLowerCase();
+
+    // Restore stock and cancel Shiprocket if the order is being cancelled
+    if (newStatus === "cancelled" && order.orderStatus !== "cancelled") {
+        const { Product } = await import("../models/product.model.js");
+        for (const item of order.products) {
+            const product = await Product.findById(item.productId);
+            if (product && product.trackStock) {
+                product.stock += item.quantity;
+                if (product.stockStatus === 'out_of_stock' && product.stock > 0) {
+                    product.stockStatus = 'in_stock';
+                }
+                await product.save({ validateBeforeSave: false });
+            }
+        }
+
+        // Cancel Shiprocket Order if it was dispatched
+        if (order.shiprocketOrderId) {
+            try {
+                const { cancelShiprocketShipment } = await import("../utils/shiprocket.service.js");
+                await cancelShiprocketShipment([order.shiprocketOrderId]);
+            } catch (err) {
+                console.warn(`Failed to auto-cancel Shiprocket order for DB Order ${order._id}:`, err?.message);
+            }
+        }
+    }
+
+    order.orderStatus = newStatus;
+    await order.save();
+
     return res.status(200).json(new ApiResponse(200, order, "Order status updated successfully"));
+});
+
+export const markOrderAsSelfShipped = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new ApiError(404, "Order not found");
+
+    if (order.shiprocketOrderId) {
+        throw new ApiError(400, "Order is already dispatched to Shiprocket.");
+    }
+
+    order.isSelfShipped = true;
+    order.orderStatus = "shipped";
+    await order.save();
+
+    return res.status(200).json(new ApiResponse(200, order, "Order marked as Self Delivered successfully"));
 });
 
 export const verifySecurityPassword = asyncHandler(async (req, res) => {

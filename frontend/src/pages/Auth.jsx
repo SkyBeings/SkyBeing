@@ -64,7 +64,7 @@ const Auth = () => {
                 <div className="w-[450px] hidden lg:block rounded-l overflow-hidden shadow-sm relative">
                     <img
                         src={authBanner}
-                        alt="SkyBeing Auth"
+                        alt="SkyBeings Auth"
                         className="absolute inset-0 w-full h-full object-cover"
                     />
                     {/* Subtle Overlay */}

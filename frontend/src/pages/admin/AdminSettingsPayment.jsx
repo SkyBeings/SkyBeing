@@ -3,8 +3,7 @@ const AdminSettingsPayment = () => (
     <div className="space-y-6 max-w-2xl">
         <div><h1 className="text-3xl font-bold text-gray-900">Payment Settings</h1><p className="text-sm text-gray-500 mt-1">Configure your payment gateway credentials.</p></div>
         {[
-            { title: 'Stripe', fields: ['Stripe Publishable Key', 'Stripe Secret Key', 'Webhook Secret'] },
-            { title: 'Razorpay', fields: ['Razorpay Key ID', 'Razorpay Key Secret'] },
+            { title: 'Razorpay', fields: ['Razorpay Key ID', 'Razorpay Key Secret', 'Webhook Secret'] },
         ].map(gw => (
             <div key={gw.title} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-gray-100">

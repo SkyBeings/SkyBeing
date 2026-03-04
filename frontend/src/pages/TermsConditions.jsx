@@ -24,7 +24,7 @@ const TermsConditions = () => {
 
                 <h2 className="text-[28px] font-bold text-black mb-6">Terms</h2>
                 <p className="mb-4">
-                    By accessing the website at <a href="https://skybeing.in/" className="text-skyGreen font-semibold hover:underline">https://skybeing.in/</a>,
+                    By accessing the website at <a href="https://skybeings.in/" className="text-skyGreen font-semibold hover:underline">https://skybeings.in/</a>,
                     you are agreeing to be bound by these terms of service, all applicable laws and regulations, and agree that you are
                     responsible for compliance with any applicable local laws.
                 </p>
@@ -66,7 +66,7 @@ const TermsConditions = () => {
 
                 <h3 className="text-[20px] font-bold text-black mb-4 mt-8">Modifications</h3>
                 <p className="mb-4">
-                    <strong>SkyBeing</strong> may revise these terms of service for its website at any time without notice. By using this website,
+                    <strong>SkyBeings</strong> may revise these terms of service for its website at any time without notice. By using this website,
                     you are agreeing to be bound by the then-current version of these terms of service.
                 </p>
 

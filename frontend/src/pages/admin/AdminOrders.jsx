@@ -1,16 +1,252 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Eye, Loader2, Package, FileText } from 'lucide-react';
+import { ShoppingCart, Search, Eye, Loader2, Package, FileText, X, User, MapPin, Phone, Mail, CreditCard, MessageSquare, ChevronRight, Truck } from 'lucide-react';
 import api from '../../api/axios';
 import InvoiceModal from '../../components/admin/InvoiceModal';
 
+// ─── Order Details Modal ───────────────────────────────────────────────────
+const OrderDetailsModal = ({ order, onClose }) => {
+    if (!order) return null;
+
+    const paymentBadge = order.paymentMethod === 'cod'
+        ? { label: 'Cash on Delivery', bg: 'bg-orange-100 text-orange-700' }
+        : { label: 'Online Payment', bg: 'bg-blue-100 text-blue-700' };
+
+    const paymentStatusBadge = {
+        pending: 'bg-yellow-100 text-yellow-700',
+        completed: 'bg-green-100 text-green-700',
+        failed: 'bg-red-100 text-red-700',
+    }[order.paymentStatus] || 'bg-gray-100 text-gray-600';
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10 rounded-t-2xl">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-skyGreen/10 rounded-xl">
+                            <Package className="w-5 h-5 text-skyGreen" />
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-gray-900 text-lg">Order Details</h2>
+                            <p className="text-xs text-gray-400 font-mono">#{order._id.substring(order._id.length - 10).toUpperCase()}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Status Row */}
+                    <div className="flex flex-wrap gap-2">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${paymentBadge.bg}`}>
+                            <CreditCard className="w-3 h-3" />
+                            {paymentBadge.label}
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${paymentStatusBadge}`}>
+                            Payment: {order.paymentStatus}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 capitalize">
+                            Order: {order.orderStatus}
+                        </span>
+                    </div>
+
+                    {/* Customer Information */}
+                    <div className="bg-gray-50 rounded-xl p-5 space-y-3">
+                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                            <User className="w-4 h-4 text-skyGreen" /> Customer Information
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p className="text-xs text-gray-400 font-medium mb-0.5">Full Name</p>
+                                <p className="font-semibold text-gray-800">{order.customerName || order.userId?.name || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400 font-medium mb-0.5">Email</p>
+                                <p className="font-semibold text-gray-800 break-all">{order.customerEmail || order.userId?.email || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400 font-medium mb-0.5">WhatsApp / Phone</p>
+                                <p className="font-semibold text-gray-800">{order.customerPhone || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400 font-medium mb-0.5">Order Date</p>
+                                <p className="font-semibold text-gray-800">
+                                    {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Shipping Address */}
+                    <div className="bg-gray-50 rounded-xl p-5 space-y-3">
+                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-skyGreen" /> Shipping Address
+                        </h3>
+                        {order.shippingAddress ? (
+                            <div className="text-sm text-gray-800 space-y-1">
+                                {order.shippingAddress.street && <p>{order.shippingAddress.street}</p>}
+                                <p>
+                                    {[order.shippingAddress.city, order.shippingAddress.state].filter(Boolean).join(', ')}
+                                    {order.shippingAddress.zipCode && ` – ${order.shippingAddress.zipCode}`}
+                                </p>
+                                {order.shippingAddress.country && <p className="text-gray-500">{order.shippingAddress.country}</p>}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-400">No address provided</p>
+                        )}
+                    </div>
+
+                    {/* Order Notes */}
+                    {order.orderNotes && (
+                        <div className="bg-amber-50 rounded-xl p-5 space-y-2">
+                            <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wider flex items-center gap-2">
+                                <MessageSquare className="w-4 h-4" /> Order Notes
+                            </h3>
+                            <p className="text-sm text-amber-800">{order.orderNotes}</p>
+                        </div>
+                    )}
+
+                    {/* Products Ordered */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-skyGreen" /> Products Ordered
+                        </h3>
+                        <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                            {order.products?.map((item, idx) => {
+                                const product = item.productId;
+                                return (
+                                    <div key={idx} className="flex items-center gap-4 px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                                            {product?.images?.[0]
+                                                ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                                                : <Package className="w-5 h-5 text-gray-400" />
+                                            }
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-gray-900 text-sm truncate">{product?.name || 'Product'}</p>
+                                            <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                                        </div>
+                                        <div className="text-sm font-bold text-gray-900 shrink-0">
+                                            ₹{((product?.price || 0) * item.quantity).toLocaleString('en-IN')}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Shiprocket Dispatch Section */}
+                    {order.isConfirmed && (
+                        <div className="bg-blue-50/50 rounded-xl p-5 space-y-4 border border-blue-100">
+                            <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wider flex items-center gap-2">
+                                <Truck className="w-4 h-4" /> Logistics & Dispatch
+                            </h3>
+
+                            {order.shiprocketOrderId ? (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-gray-500 font-medium">Shiprocket Order ID:</span>
+                                        <span className="font-semibold text-gray-900">{order.shiprocketOrderId}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-gray-500 font-medium">Courier:</span>
+                                        <span className="font-semibold text-gray-900">{order.courierName || 'Pending'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-gray-500 font-medium">AWB Code:</span>
+                                        <span className="font-mono bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-200">
+                                            {order.awbCode || 'Generating...'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : order.isSelfShipped ? (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <p className="text-sm text-gray-800 font-bold bg-white px-4 py-2.5 rounded-xl border border-gray-200 flex items-center gap-2 shadow-sm">
+                                        <span className="text-xl">🙌</span> Delivered Manually by System Admin
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-blue-100 pt-3">
+                                    <p className="text-sm text-gray-600 font-medium">
+                                        Choose a dispatch method for this order:
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <button
+                                            onClick={async (e) => {
+                                                const btn = e.currentTarget;
+                                                const confirmed = window.confirm("Are you sure you want to handle this delivery manually? It will not be sent to Shiprocket.");
+                                                if (!confirmed) return;
+
+                                                try {
+                                                    btn.disabled = true;
+                                                    btn.innerHTML = 'Updating...';
+
+                                                    await api.put(`/admin/orders/${order._id}/self-ship`);
+                                                    window.location.reload();
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert(err.response?.data?.message || 'Failed to switch to manual delivery');
+                                                    btn.disabled = false;
+                                                    btn.innerHTML = 'Deliver Manually';
+                                                }
+                                            }}
+                                            className="whitespace-nowrap px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
+                                        >
+                                            Deliver Manually
+                                        </button>
+                                        <button
+                                            onClick={async (e) => {
+                                                const btn = e.currentTarget;
+                                                try {
+                                                    btn.disabled = true;
+                                                    btn.innerHTML = 'Dispatching...';
+
+                                                    await api.post(`/shiprocket/create/${order._id}`);
+                                                    alert('Shipment successfully created on Shiprocket!');
+
+                                                    window.location.reload();
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert(err.response?.data?.message || 'Failed to dispatch to Shiprocket');
+                                                    btn.disabled = false;
+                                                    btn.innerHTML = 'Dispatch to Shiprocket';
+                                                }
+                                            }}
+                                            className="whitespace-nowrap px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
+                                        >
+                                            Dispatch to Shiprocket
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center bg-gray-900 text-white rounded-xl px-5 py-4">
+                        <span className="font-semibold text-sm">Order Total</span>
+                        <span className="font-bold text-lg">₹{order.totalAmount?.toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Main AdminOrders Component ────────────────────────────────────────────
 const AdminOrders = () => {
     const [orders, setOrders] = useState([]);
     const [status, setStatus] = useState('idle');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [invoiceOrder, setInvoiceOrder] = useState(null);
+    const [detailOrder, setDetailOrder] = useState(null);
 
-    // Status color mapping
     const statusColors = {
         pending: 'bg-yellow-100 text-yellow-800',
         processing: 'bg-blue-100 text-blue-800',
@@ -22,7 +258,6 @@ const AdminOrders = () => {
     const fetchOrders = async () => {
         setStatus('loading');
         try {
-            // Include status filter if selected
             const query = selectedStatus ? `?status=${selectedStatus}` : '';
             const res = await api.get(`/admin/orders${query}`);
             setOrders(res.data.data.orders);
@@ -40,7 +275,6 @@ const AdminOrders = () => {
     const handleStatusChange = async (orderId, newStatus) => {
         try {
             await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
-            // Optimistic update
             setOrders(orders.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
         } catch (error) {
             alert('Failed to update status');
@@ -49,17 +283,20 @@ const AdminOrders = () => {
 
     const filteredOrders = orders.filter(order =>
         order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        (order.customerName || order.userId?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.customerEmail || order.userId?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.customerPhone || '').includes(searchTerm)
     );
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header section */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Orders <span className="text-gray-400 text-lg font-normal mb-1 ml-2">({orders.length})</span></h1>
-                    <p className="mt-1 text-sm text-gray-500">View and manage customer orders and fulfillment.</p>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                        Orders <span className="text-gray-400 text-lg font-normal mb-1 ml-2">({orders.length})</span>
+                    </h1>
+                    <p className="mt-1 text-sm text-gray-500">Showing only confirmed orders (COD &amp; paid online).</p>
                 </div>
             </div>
 
@@ -69,13 +306,12 @@ const AdminOrders = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                         type="text"
-                        placeholder="Search by Order ID, Name, or Email..."
+                        placeholder="Search by Order ID, Name, Email or Phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-skyGreen focus:ring-2 focus:ring-skyGreen/20 transition-all outline-none"
                     />
                 </div>
-
                 <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
@@ -98,28 +334,31 @@ const AdminOrders = () => {
                             <tr className="bg-gray-50 border-b border-gray-100">
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Order ID</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Payment</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Invoice</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {status === 'loading' ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-skyGreen" />
                                     </td>
                                 </tr>
                             ) : filteredOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500 text-sm">
-                                        No orders found matching your search.
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 text-sm">
+                                        No confirmed orders found.
                                     </td>
                                 </tr>
                             ) : (
                                 filteredOrders.map((order) => (
                                     <tr key={order._id} className="hover:bg-green-50/30 transition-colors group">
+                                        {/* Order ID */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
@@ -130,18 +369,37 @@ const AdminOrders = () => {
                                                 </span>
                                             </div>
                                         </td>
+
+                                        {/* Customer */}
                                         <td className="px-6 py-4">
-                                            <div className="font-semibold text-gray-900">{order.userId?.name || 'Unknown'}</div>
-                                            <div className="text-sm text-gray-500">{order.userId?.email || 'N/A'}</div>
+                                            <div className="font-semibold text-gray-900">
+                                                {order.customerName || order.userId?.name || 'Guest'}
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                                {order.customerPhone || order.customerEmail || order.userId?.email || '—'}
+                                            </div>
                                         </td>
+
+                                        {/* Payment Method */}
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${order.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                <CreditCard className="w-3 h-3" />
+                                                {order.paymentMethod === 'cod' ? 'COD' : 'Online'}
+                                            </span>
+                                        </td>
+
+                                        {/* Date */}
                                         <td className="px-6 py-4 text-sm text-gray-600">
-                                            {new Date(order.createdAt).toLocaleDateString()}
+                                            {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            ${order.totalAmount?.toFixed(2)}
+
+                                        {/* Total */}
+                                        <td className="px-6 py-4 font-semibold text-gray-900">
+                                            ₹{order.totalAmount?.toLocaleString('en-IN')}
                                         </td>
+
+                                        {/* Status Dropdown */}
                                         <td className="px-6 py-4">
-                                            {/* Status Dropdown instead of just text */}
                                             <select
                                                 value={order.orderStatus}
                                                 onChange={(e) => handleStatusChange(order._id, e.target.value)}
@@ -154,6 +412,19 @@ const AdminOrders = () => {
                                                 <option value="cancelled">Cancelled</option>
                                             </select>
                                         </td>
+
+                                        {/* Details Button */}
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => setDetailOrder(order)}
+                                                className="p-2 bg-gray-100 hover:bg-skyGreen hover:text-white rounded-lg transition-colors text-gray-600 flex items-center justify-center m-auto"
+                                                title="View Order Details"
+                                            >
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                        </td>
+
+                                        {/* Invoice Button */}
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={() => setInvoiceOrder(order)}
@@ -171,7 +442,15 @@ const AdminOrders = () => {
                 </div>
             </div>
 
-            {/* Display Invoice Modal if an order is selected */}
+            {/* Order Details Modal */}
+            {detailOrder && (
+                <OrderDetailsModal
+                    order={detailOrder}
+                    onClose={() => setDetailOrder(null)}
+                />
+            )}
+
+            {/* Invoice Modal */}
             {invoiceOrder && (
                 <InvoiceModal
                     order={invoiceOrder}

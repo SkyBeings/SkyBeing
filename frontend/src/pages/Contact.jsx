@@ -56,7 +56,7 @@ const Contact = () => {
                         <div className="relative z-10 text-center">
                             <h1 className="text-5xl font-bold text-black mb-4 tracking-wide">Contact</h1>
                             <p className="text-lg text-black font-semibold">
-                                Home <span className="mx-2">&gt;</span> Contact
+                                <Link to="/" className="hover:underline transition">Home</Link> <span className="mx-2">&gt;</span> Contact
                             </p>
                         </div>
                     </div>
@@ -132,7 +132,7 @@ const Contact = () => {
                                     <a href="https://www.facebook.com/share/18BuUErAsw/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0c660b] transition">
                                         <Facebook className="w-6 h-6" strokeWidth={1.5} />
                                     </a>
-                                    <a href="https://www.instagram.com/skybeingss?igsh=eGZkMmNvbTl1NDll&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0c660b] transition">
+                                    <a href="https://www.instagram.com/skybeingsss?igsh=eGZkMmNvbTl1NDll&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0c660b] transition">
                                         <Instagram className="w-6 h-6" strokeWidth={1.5} />
                                     </a>
                                 </div>

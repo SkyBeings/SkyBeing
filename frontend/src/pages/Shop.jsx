@@ -145,7 +145,7 @@ const Shop = () => {
                     <div className="h-[300px] bg-[#FCECD8] w-full flex flex-col items-center justify-center relative overflow-hidden">
                         <div className="relative z-10 text-center">
                             <h1 className="text-5xl font-bold text-black mb-4 tracking-wide">Shop</h1>
-                            <p className="text-lg text-black font-semibold">Home <span className="mx-2">&gt;</span> Shop</p>
+                            <p className="text-lg text-black font-semibold"><Link to="/" className="hover:underline transition">Home</Link> <span className="mx-2">&gt;</span> Shop</p>
                         </div>
                     </div>
                 }
@@ -346,7 +346,7 @@ const Shop = () => {
                                         >
                                             <Heart className={`w-4 h-4 ${wishlistIds.includes(prod._id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
                                             disabled={prod.stock === 0 || addingId === prod._id}
                                             className="w-8 h-8 bg-skyGreen text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"

@@ -3,9 +3,10 @@ import { ApiError } from "../utils/ApiError.js";
 import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { createShiprocketShipment, generateAWB } from "../utils/shiprocket.service.js";
 
 const createOrder = asyncHandler(async (req, res) => {
-    const { shippingAddress, cartItems } = req.body;
+    const { shippingAddress, cartItems, paymentMethod, customerName, customerEmail, customerPhone, orderNotes } = req.body;
     const userId = req.user ? req.user._id : null;
 
     if (!shippingAddress) {
@@ -23,13 +24,24 @@ const createOrder = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Cart is empty");
         }
 
-        orderItems = user.cart.map((cartItem) => {
-            totalAmount += cartItem.product.price * cartItem.quantity;
-            return {
-                productId: cartItem.product._id,
+        for (const cartItem of user.cart) {
+            const product = cartItem.product;
+
+            if (product.trackStock) {
+                if (product.stock < cartItem.quantity) {
+                    throw new ApiError(400, `Not enough stock for ${product.name}. Only ${product.stock} left.`);
+                }
+                product.stock -= cartItem.quantity;
+                if (product.stock === 0) product.stockStatus = "out_of_stock";
+                await product.save({ validateBeforeSave: false });
+            }
+
+            totalAmount += product.price * cartItem.quantity;
+            orderItems.push({
+                productId: product._id,
                 quantity: cartItem.quantity
-            };
-        });
+            });
+        }
 
         // Clear user cart after calculating
         user.cart = [];
@@ -41,13 +53,20 @@ const createOrder = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Guest cart is empty");
         }
 
-        // We expect cartItems to be { productId, quantity, price } from frontend for simplicity 
-        // OR we can query the DB. We should query DB for security so price isn't spoofed.
         const { Product } = await import("../models/product.model.js");
 
         for (const item of cartItems) {
             const product = await Product.findById(item.productId);
             if (!product) throw new ApiError(404, `Product not found: ${item.productId}`);
+
+            if (product.trackStock) {
+                if (product.stock < item.quantity) {
+                    throw new ApiError(400, `Not enough stock for ${product.name}. Only ${product.stock} left.`);
+                }
+                product.stock -= item.quantity;
+                if (product.stock === 0) product.stockStatus = "out_of_stock";
+                await product.save({ validateBeforeSave: false });
+            }
 
             totalAmount += product.price * item.quantity;
             orderItems.push({
@@ -58,10 +77,18 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     const order = await Order.create({
-        userId, // Might be null for guests
+        userId,
         products: orderItems,
         shippingAddress,
         totalAmount,
+        paymentMethod: paymentMethod || "cod",
+        paymentStatus: "pending",
+        customerName: customerName || "",
+        customerEmail: customerEmail || "",
+        customerPhone: customerPhone || "",
+        orderNotes: orderNotes || "",
+        // COD orders are confirmed immediately; online orders need payment verification
+        isConfirmed: (paymentMethod === 'cod' || !paymentMethod),
     });
 
     if (!order) {
@@ -103,7 +130,35 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Order not found");
     }
 
-    if (orderStatus) order.orderStatus = orderStatus;
+    if (orderStatus && orderStatus === "cancelled" && order.orderStatus !== "cancelled") {
+        // Restore stock when an order is cancelled
+        const { Product } = await import("../models/product.model.js");
+        for (const item of order.products) {
+            const product = await Product.findById(item.productId);
+            if (product && product.trackStock) {
+                product.stock += item.quantity;
+                if (product.stockStatus === 'out_of_stock' && product.stock > 0) {
+                    product.stockStatus = 'in_stock';
+                }
+                await product.save({ validateBeforeSave: false });
+            }
+        }
+
+        // Cancel Shiprocket Order if it was dispatched
+        if (order.shiprocketOrderId) {
+            try {
+                const { cancelShiprocketShipment } = await import("../utils/shiprocket.service.js");
+                await cancelShiprocketShipment([order.shiprocketOrderId]);
+            } catch (err) {
+                console.warn(`Failed to auto-cancel Shiprocket order for DB Order ${order._id}:`, err?.message);
+            }
+        }
+
+        order.orderStatus = orderStatus;
+    } else if (orderStatus) {
+        order.orderStatus = orderStatus;
+    }
+
     if (paymentStatus) order.paymentStatus = paymentStatus;
 
     await order.save();

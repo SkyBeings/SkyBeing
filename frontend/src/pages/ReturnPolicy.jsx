@@ -24,7 +24,7 @@ const ReturnPolicy = () => {
 
                 <h2 className="text-[28px] font-bold text-black mb-6">Returns &amp; Cancellations</h2>
                 <p className="mb-10 text-lg text-black font-medium">
-                    At <strong>SkyBeing</strong>, we aim to provide the best possible experience for our customers.
+                    At <strong>SkyBeings</strong>, we aim to provide the best possible experience for our customers.
                 </p>
 
                 <h3 className="text-[20px] font-bold text-black mb-4">Refund Policy</h3>
@@ -55,7 +55,7 @@ const ReturnPolicy = () => {
                 <ul className="space-y-3 font-medium text-black">
                     <li>
                         <span className="text-gray-500 w-44 inline-block font-normal">Customer Care Email:</span>
-                        <a href="mailto:Skybeings422209@gmail.com" className="hover:text-skyGreen transition">Skybeings422209@gmail.com</a>
+                        <a href="mailto:Skybeingss422209@gmail.com" className="hover:text-skyGreen transition">Skybeingss422209@gmail.com</a>
                     </li>
                     <li>
                         <span className="text-gray-500 w-44 inline-block font-normal">Customer Care Number:</span>

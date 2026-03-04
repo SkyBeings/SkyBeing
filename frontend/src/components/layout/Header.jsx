@@ -82,7 +82,7 @@ const Header = () => {
 
                         {/* Center Logo */}
                         <Link to="/" className="flex-shrink-0 flex items-center justify-center">
-                            <img src="/logo-cropped.png" alt="SkyBeing Logo" className="h-16 w-auto object-contain pt-1 transform scale-125" />
+                            <img src="/logo-cropped.png" alt="SkyBeings Logo" className="h-16 w-auto object-contain pt-1 transform scale-125" />
                         </Link>
 
                         {/* Right Icons */}
@@ -153,7 +153,7 @@ const Header = () => {
                     >
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-                            <span className="font-extrabold text-[#0E7A0D] text-lg">SkyBeing</span>
+                            <span className="font-extrabold text-[#0E7A0D] text-lg">SkyBeings</span>
                             <button onClick={() => setMobileMenuOpen(false)} className="text-gray-500 hover:text-black">
                                 <X className="w-6 h-6" />
                             </button>

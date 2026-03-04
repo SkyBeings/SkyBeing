@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import {
     Plus, Trash2, Loader2, Image as ImageIcon, X, Save,
-    Eye, EyeOff, LayoutGrid, Home, ShoppingBag, Info, Mail, Globe
+    Eye, EyeOff, LayoutGrid, Home, ShoppingBag, Info, Mail, Globe,
+    Camera, BookOpen, ShoppingCart, CreditCard, Heart
 } from 'lucide-react';
 import api from '../../api/axios';
 
 const PAGE_OPTIONS = [
     { id: 'home', label: 'Home Page', icon: Home },
     { id: 'shop', label: 'Shop Page', icon: ShoppingBag },
-    { id: 'about', label: 'About Page', icon: Info },
+    { id: 'about', label: 'About Page (Banner)', icon: Info },
+    { id: 'about-content', label: 'About Content Image', icon: Info },
     { id: 'contact', label: 'Contact Page', icon: Mail },
+    { id: 'gallery', label: 'Gallery Page', icon: Camera },
+    { id: 'blog', label: 'Blog Page', icon: BookOpen },
+    { id: 'cart', label: 'Cart Page', icon: ShoppingCart },
+    { id: 'checkout', label: 'Checkout Page', icon: CreditCard },
+    { id: 'wishlist', label: 'Wishlist Page', icon: Heart },
     { id: 'all', label: 'All Pages', icon: Globe },
 ];
 
@@ -138,7 +145,7 @@ const AdminBanners = () => {
                         Banners <span className="text-gray-400 text-lg font-normal ml-2">({banners.length})</span>
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        Manage banners across all pages — assign each banner to Home, Shop, About, Contact, or All Pages.
+                        Manage banners &amp; content images across all pages — Home, Shop, About (Banner + Content Image), Contact, Gallery, Blog, Cart, Checkout, Wishlist, or All Pages.
                     </p>
                 </div>
                 <button onClick={() => setShowForm(true)}
@@ -248,8 +255,8 @@ const AdminBanners = () => {
                                         return (
                                             <button key={opt.id} type="button" onClick={() => togglePage(opt.id)}
                                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${selected
-                                                        ? 'bg-skyGreen text-white border-skyGreen shadow-sm'
-                                                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-skyGreen hover:text-skyGreen'
+                                                    ? 'bg-skyGreen text-white border-skyGreen shadow-sm'
+                                                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-skyGreen hover:text-skyGreen'
                                                     }`}>
                                                 <Icon className="w-4 h-4" />
                                                 {opt.label}
@@ -350,8 +357,8 @@ const AdminBanners = () => {
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => handleToggle(banner._id)}
                                         className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors border ${banner.isActive
-                                                ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
-                                                : 'border-green-200 text-skyGreen hover:bg-green-50'
+                                            ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
+                                            : 'border-green-200 text-skyGreen hover:bg-green-50'
                                             }`}>
                                         {banner.isActive ? <><EyeOff className="w-4 h-4" /> Hide</> : <><Eye className="w-4 h-4" /> Show</>}
                                     </button>

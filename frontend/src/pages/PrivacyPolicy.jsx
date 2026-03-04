@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
 
                 <h2 className="text-[28px] font-bold text-black mb-6">Privacy Policy</h2>
                 <p className="mb-6">
-                    <strong>SkyBeing</strong> is committed to protecting all the information you share with us.
+                    <strong>SkyBeings</strong> is committed to protecting all the information you share with us.
                 </p>
                 <p className="mb-8">
                     Please read our privacy policy carefully to get a clear understanding of how we collect, use, protect,

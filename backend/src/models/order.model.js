@@ -25,6 +25,11 @@ const orderSchema = new Schema(
             type: Number,
             required: true
         },
+        paymentMethod: {
+            type: String,
+            enum: ["cod", "online"],
+            default: "cod"
+        },
         paymentStatus: {
             type: String,
             enum: ["pending", "completed", "failed"],
@@ -41,7 +46,23 @@ const orderSchema = new Schema(
             state: String,
             country: String,
             zipCode: String
-        }
+        },
+        // Customer contact details saved at time of order
+        customerName: { type: String, default: "" },
+        customerEmail: { type: String, default: "" },
+        customerPhone: { type: String, default: "" },
+        orderNotes: { type: String, default: "" },
+        // Whether the order is confirmed (COD = instantly, online = after payment verification)
+        isConfirmed: { type: Boolean, default: false },
+
+        // Shiprocket integration fields
+        shiprocketOrderId: { type: String, default: null },
+        shiprocketShipmentId: { type: Number, default: null },
+        awbCode: { type: String, default: null },
+        courierName: { type: String, default: null },
+
+        // Self shipping
+        isSelfShipped: { type: Boolean, default: false },
     },
     {
         timestamps: true

@@ -110,7 +110,7 @@ const InvoiceModal = ({ order, onClose }) => {
                         <div className="p-12 relative h-full flex flex-col">
                             {/* Header Logo */}
                             <div className="flex justify-center mb-16">
-                                <img src="/logo-cropped.png" alt="SkyBeing Logo" className="h-32 w-auto object-contain" />
+                                <img src="/logo-cropped.png" alt="SkyBeings Logo" className="h-32 w-auto object-contain" />
                             </div>
 
                             {/* Info Section */}

@@ -83,7 +83,7 @@ const SecurityPrompt = ({ onVerified }) => {
                 <div className="text-center mt-4">
                     <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                         <ShieldCheck className="h-3 w-3" />
-                        This is an additional security layer for SKYBEING administrators.
+                        This is an additional security layer for SKYBEINGS administrators.
                     </p>
                 </div>
             </div>

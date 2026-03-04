@@ -16,6 +16,7 @@ import {
     adminGetOrders,
     adminGetOrderById,
     adminUpdateOrderStatus,
+    markOrderAsSelfShipped,
     verifySecurityPassword
 } from "../controllers/admin.controller.js";
 import { getSiteStats } from "../controllers/stats.controller.js";
@@ -56,5 +57,6 @@ router.route("/products/:id").delete(adminDeleteProduct);
 router.route("/orders").get(adminGetOrders);
 router.route("/orders/:id").get(adminGetOrderById);
 router.route("/orders/:id/status").put(adminUpdateOrderStatus);
+router.route("/orders/:id/self-ship").put(markOrderAsSelfShipped);
 
 export default router;

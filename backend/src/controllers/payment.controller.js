@@ -64,6 +64,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
         const order = await Order.findById(orderId);
         if (order) {
             order.paymentStatus = 'completed';
+            order.isConfirmed = true; // Mark as confirmed only after successful payment
             await order.save();
         }
 
@@ -106,6 +107,7 @@ const razorpayWebhook = asyncHandler(async (req, res) => {
                 if (order) {
                     if (event === "payment.captured" || event === "order.paid") {
                         order.paymentStatus = 'completed';
+                        order.isConfirmed = true;
                         await order.save();
                     } else if (event === "payment.failed") {
                         order.paymentStatus = 'failed';

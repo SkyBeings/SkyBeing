@@ -13,7 +13,7 @@ import birdFeederImg from '../assets/images/bird_feeder.png';
 import waterFeederImg from '../assets/images/water_feeder.png';
 import birdHouseImg from '../assets/images/bird_house.png';
 
-import BirdLoader from '../components/ui/BirdLoader';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
 
 // ── Gallery Section Component ────────────────────────────────────────────────
 const MOSAIC_COLS = [
@@ -61,7 +61,7 @@ const GallerySection = () => {
 
             {loading ? (
                 <div className="flex items-center justify-center h-48">
-                    <BirdLoader text="Loading Gallery..." />
+                    <SkeletonLoader text="Loading Gallery..." />
                 </div>
             ) : images.length > 0 ? (
                 <div className="max-w-6xl mx-auto px-4 overflow-hidden">
@@ -94,14 +94,14 @@ const GallerySection = () => {
 
                     {/* View All Buttons */}
                     <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link 
-                            to="/gallery" 
+                        <Link
+                            to="/gallery"
                             className="w-full sm:w-auto px-8 py-3.5 bg-[#4A6443] text-white font-bold rounded-xl hover:bg-green-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm uppercase tracking-wider"
                         >
                             View All Gallery
                         </Link>
-                        <Link 
-                            to="/blogs" 
+                        <Link
+                            to="/blogs"
                             className="w-full sm:w-auto px-8 py-3.5 bg-[#FCECD8] text-[#A77B51] font-bold rounded-xl hover:bg-[#A77B51] hover:text-white transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm uppercase tracking-wider border border-[#A77B51]/20"
                         >
                             Read Our Blogs
@@ -145,7 +145,7 @@ const Home = () => {
                         <div className="absolute top-[20%] left-[10%] w-[200px] h-[60px] bg-white/20 rounded-full blur-xl" />
                         <div className="absolute top-[30%] right-[15%] w-[150px] h-[50px] bg-white/15 rounded-full blur-xl" />
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                            <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">Welcome to SkyBeing</h1>
+                            <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">Welcome to SkyBeings</h1>
                             <p className="text-white/80 text-lg mb-6">Premium bird feeders &amp; accessories</p>
                             <Link to="/shop" className="inline-block bg-white text-skyGreen font-bold px-8 py-3 rounded-lg hover:bg-gray-100 transition-all shadow-lg">
                                 Shop Now
@@ -156,19 +156,19 @@ const Home = () => {
             />
 
             {/* ========== EXPLORE CATEGORIES ========== */}
-            <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="text-center mb-10">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Explore Categories</h2>
-                    <p className="text-gray-400 text-sm">Made to match nature</p>
+            <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+                <div className="text-center mb-5 md:mb-10">
+                    <h2 className="text-lg md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Explore Categories</h2>
+                    <p className="text-gray-400 text-xs md:text-sm">Made to match nature</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
                     {categories.map((cat, i) => (
                         <Link to="/shop" state={{ category: cat.name }} key={i} className="flex flex-col group block">
-                            <div className="bg-[#F0F0F0] h-64 flex items-center justify-center overflow-hidden mb-0">
+                            <div className="bg-[#F0F0F0] h-24 sm:h-40 md:h-64 flex items-center justify-center overflow-hidden mb-0">
                                 <img src={cat.image} alt={cat.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
-                            <div className="w-full py-3 text-center bg-skyGreen text-white font-bold text-base cursor-pointer group-hover:bg-skyGreen/90 transition">
+                            <div className="w-full py-1.5 md:py-3 text-center bg-skyGreen text-white font-bold text-[10px] sm:text-xs md:text-base cursor-pointer group-hover:bg-skyGreen/90 transition leading-tight px-1">
                                 {cat.name}
                             </div>
                         </Link>
@@ -238,7 +238,7 @@ const Home = () => {
                                     >
                                         <Heart className={`w-3.5 h-3.5 ${wishlistIds.includes(prod._id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={async (e) => {
                                             e.stopPropagation();
                                             try {

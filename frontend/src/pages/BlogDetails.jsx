@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, Eye, User, Share2 } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../components/ui/Toast';
 import DOMPurify from 'dompurify';
-import BirdLoader from '../components/ui/BirdLoader';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
 
 const BlogDetails = () => {
     const { slug } = useParams();
@@ -39,7 +39,7 @@ const BlogDetails = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
-                <BirdLoader text="Loading Article..." />
+                <SkeletonLoader text="Loading Article..." />
             </div>
         );
     }
@@ -49,7 +49,7 @@ const BlogDetails = () => {
     return (
         <div className="bg-[#FAFAFA] min-h-screen pb-24 pt-28">
             <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                
+
                 {/* Back Link */}
                 <Link to="/blogs" className="inline-flex items-center gap-2 text-skyGreen font-semibold hover:underline mb-8 hover:-translate-x-1 transition-transform">
                     <ArrowLeft className="w-4 h-4" /> Back to Journal
@@ -64,7 +64,7 @@ const BlogDetails = () => {
                             </span>
                         ))}
                     </div>
-                    
+
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-8">
                         {blog.title}
                     </h1>
@@ -74,7 +74,7 @@ const BlogDetails = () => {
                             <User className="w-4 h-4 text-skyGreen" /> {blog.author}
                         </span>
                         <span className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-skyGreen" /> 
+                            <Calendar className="w-4 h-4 text-skyGreen" />
                             {new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </span>
                         <span className="flex items-center gap-2">
@@ -86,9 +86,9 @@ const BlogDetails = () => {
                 {/* Cover Image */}
                 {blog.coverImage && (
                     <div className="w-full aspect-video md:aspect-[21/9] rounded-[2rem] overflow-hidden mb-16 shadow-xl border border-gray-100">
-                        <img 
-                            src={blog.coverImage} 
-                            alt={blog.title} 
+                        <img
+                            src={blog.coverImage}
+                            alt={blog.title}
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -97,7 +97,7 @@ const BlogDetails = () => {
                 {/* Blog Content */}
                 <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 px-6 py-10 md:p-16 relative">
                     {/* Floating Share Button */}
-                    <button 
+                    <button
                         onClick={handleShare}
                         className="absolute top-8 right-8 w-12 h-12 bg-gray-50 hover:bg-green-50 text-gray-500 hover:text-skyGreen rounded-full flex items-center justify-center transition shadow-sm border border-gray-100"
                         title="Share this post"
@@ -105,9 +105,9 @@ const BlogDetails = () => {
                         <Share2 className="w-5 h-5" />
                     </button>
 
-                    <div 
+                    <div
                         className="prose prose-lg md:prose-xl max-w-none text-gray-700 font-serif leading-relaxed prose-headings:font-sans prose-headings:font-bold prose-headings:text-gray-900 prose-a:text-skyGreen hover:prose-a:text-green-800 prose-img:rounded-xl"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || blog.excerpt || "<p>Content coming soon...</p>") }}
                     />
                 </div>
             </article>

@@ -95,10 +95,10 @@ const AdminGallery = () => {
             <div className="bg-skyGreen/5 border border-skyGreen/20 rounded-2xl p-4 flex items-start gap-3">
                 <GalleryHorizontal className="w-5 h-5 text-skyGreen flex-shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-sm font-semibold text-skyGreen">Gallery Images appear on the Home Page</p>
+                    <p className="text-sm font-semibold text-skyGreen">Gallery Images appear on the Gallery Page & Home Page</p>
                     <p className="text-xs text-gray-500 mt-0.5">
                         Upload product/lifestyle images here. You can hide individual images using the eye toggle without deleting them.
-                        Visible images will appear in the <strong>mosaic grid</strong> on the home page.
+                        Visible images will appear in the <strong>masonry grid</strong> on the dedicated <strong>Gallery</strong> page and in the <strong>mosaic grid</strong> on the home page.
                     </p>
                 </div>
             </div>

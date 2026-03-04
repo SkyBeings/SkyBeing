@@ -7,6 +7,7 @@ import { addToCart } from '../store/slices/cartSlice';
 import { toggleWishlist, selectWishlistIds } from '../store/slices/wishlistSlice';
 import api from '../api/axios';
 import { useToast } from '../components/ui/Toast';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -71,16 +72,16 @@ const ProductDetails = () => {
     const relatedProducts = items.filter(p => p.category === product?.category && p._id !== product?._id).slice(0, 4);
 
     if (status === 'loading' || !product) {
-        return <div className="min-h-screen py-32 flex justify-center text-xl font-bold">Loading...</div>;
+        return <SkeletonLoader text="Loading product details..." />;
     }
 
     return (
         <div className="bg-white min-h-screen">
             {/* Breadcrumb row */}
             <div className="bg-[#F9F1E7] px-4 md:px-16 py-6 flex items-center text-sm font-medium text-[#9F9F9F]">
-                <span className="text-black">Home</span>
+                <Link to="/" className="text-black hover:underline transition">Home</Link>
                 <span className="mx-4 text-black">&gt;</span>
-                <span className="text-black">Shop</span>
+                <Link to="/shop" className="text-black hover:underline transition">Shop</Link>
                 <span className="mx-4 text-black">&gt;</span>
                 <span className="w-px h-6 bg-[#9F9F9F] mx-4 border-l border-[#9F9F9F]"></span>
                 <span className="text-black font-semibold tracking-wide">{product.name}</span>
@@ -97,11 +98,10 @@ const ProductDetails = () => {
                                     key={idx}
                                     type="button"
                                     onClick={() => changeImg(idx)}
-                                    className={`w-16 md:w-full shrink-0 aspect-square rounded overflow-hidden border-2 transition-all duration-200 ${
-                                        activeImg === idx
-                                            ? 'border-black shadow-md scale-105'
-                                            : 'border-transparent hover:border-gray-300 opacity-70 hover:opacity-100'
-                                    }`}
+                                    className={`w-16 md:w-full shrink-0 aspect-square rounded overflow-hidden border-2 transition-all duration-200 ${activeImg === idx
+                                        ? 'border-black shadow-md scale-105'
+                                        : 'border-transparent hover:border-gray-300 opacity-70 hover:opacity-100'
+                                        }`}
                                 >
                                     <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
                                 </button>
@@ -116,9 +116,8 @@ const ProductDetails = () => {
                                     key={activeImg}
                                     src={product.images[activeImg]}
                                     alt={product.name}
-                                    className={`w-full h-full object-cover transition-opacity duration-150 ${
-                                        imgFading ? 'opacity-0' : 'opacity-100'
-                                    }`}
+                                    className={`w-full h-full object-cover transition-opacity duration-150 ${imgFading ? 'opacity-0' : 'opacity-100'
+                                        }`}
                                 />
                             )}
 
@@ -149,11 +148,10 @@ const ProductDetails = () => {
                                                 key={idx}
                                                 type="button"
                                                 onClick={() => changeImg(idx)}
-                                                className={`rounded-full transition-all ${
-                                                    activeImg === idx
-                                                        ? 'w-4 h-2 bg-black'
-                                                        : 'w-2 h-2 bg-black/30 hover:bg-black/60'
-                                                }`}
+                                                className={`rounded-full transition-all ${activeImg === idx
+                                                    ? 'w-4 h-2 bg-black'
+                                                    : 'w-2 h-2 bg-black/30 hover:bg-black/60'
+                                                    }`}
                                                 aria-label={`Go to image ${idx + 1}`}
                                             />
                                         ))}

@@ -12,7 +12,7 @@ const bannerSchema = new Schema(
         // Which page(s) this banner should appear on
         pages: {
             type: [String],
-            enum: ["home", "shop", "about", "contact", "all"],
+            enum: ["home", "shop", "about", "about-content", "contact", "gallery", "blog", "cart", "checkout", "wishlist", "all"],
             default: ["home"],
         },
     },

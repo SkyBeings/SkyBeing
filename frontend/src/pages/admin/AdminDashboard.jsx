@@ -134,7 +134,7 @@ const AdminDashboard = () => {
                     <h1 className="text-2xl font-bold text-gray-900">
                         Welcome back, <span className="text-skyGreen">{user?.name || 'Administrator'}</span> 👋
                     </h1>
-                    <p className="text-sm text-gray-400 mt-0.5">Here's what's happening at SkyBeing right now.</p>
+                    <p className="text-sm text-gray-400 mt-0.5">Here's what's happening at SkyBeings right now.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-skyBg rounded-xl border border-skyGreen/20">

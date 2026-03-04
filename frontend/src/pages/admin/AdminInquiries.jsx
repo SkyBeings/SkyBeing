@@ -113,7 +113,7 @@ const AdminInquiries = () => {
                                         </button>
                                     )}
                                     <a 
-                                        href={`mailto:${inq.email}?subject=Re: ${inq.subject || 'Inquiry from SkyBeing'}`}
+                                        href={`mailto:${inq.email}?subject=Re: ${inq.subject || 'Inquiry from SkyBeings'}`}
                                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                                     >
                                         <Mail className="w-3.5 h-3.5" /> Reply by Mail

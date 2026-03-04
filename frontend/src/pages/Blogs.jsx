@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Calendar, ArrowRight, Eye, Camera } from 'lucide-react';
 import api from '../api/axios';
-import BirdLoader from '../components/ui/BirdLoader';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
+import BannerCarousel from '../components/ui/BannerCarousel';
 
 const Blogs = () => {
     const [blogs, setBlogs] = useState([]);
@@ -21,18 +22,23 @@ const Blogs = () => {
 
     return (
         <div className="bg-[#FAFAFA] min-h-screen pb-24">
-            {/* Header */}
-            <div className="bg-[#A77B51]/10 pt-28 pb-16 text-center">
-                <BookOpen className="w-10 h-10 text-[#A77B51] mx-auto mb-4" />
-                <h1 className="text-4xl md:text-5xl font-extrabold text-[#3A3A3A] mb-4">Our Journal</h1>
-                <p className="text-lg text-gray-700 font-medium max-w-xl mx-auto px-4">
-                    Stories, guides, and tips for nature lovers and backyard birders.
-                </p>
-            </div>
+            {/* Header — Admin-managed banner or fallback */}
+            <BannerCarousel
+                page="blog"
+                fallback={
+                    <div className="bg-[#A77B51]/10 pt-28 pb-16 text-center">
+                        <BookOpen className="w-10 h-10 text-[#A77B51] mx-auto mb-4" />
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-[#3A3A3A] mb-4">Our Journal</h1>
+                        <p className="text-lg text-gray-700 font-medium max-w-xl mx-auto px-4">
+                            Stories, guides, and tips for nature lovers and backyard birders.
+                        </p>
+                    </div>
+                }
+            />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
                 {loading ? (
-                    <BirdLoader text="Loading Stories..." className="py-20" />
+                    <SkeletonLoader text="Loading Stories..." className="py-20" />
                 ) : blogs.length === 0 ? (
                     <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
                         <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -62,7 +68,7 @@ const Blogs = () => {
                                     </div>
                                     <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 group-hover:text-skyGreen transition">{featured.title}</h2>
                                     <p className="text-gray-500 text-lg mb-8 line-clamp-3">{featured.excerpt}</p>
-                                    
+
                                     <div className="flex items-center justify-between mt-auto pt-8 border-t border-gray-100">
                                         <div className="flex items-center gap-6 text-sm text-gray-400 font-semibold">
                                             <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {new Date(featured.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -98,7 +104,7 @@ const Blogs = () => {
                                                 </div>
                                                 <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-skyGreen transition line-clamp-2">{blog.title}</h3>
                                                 <p className="text-gray-500 text-sm line-clamp-3 mb-6">{blog.excerpt}</p>
-                                                
+
                                                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 text-xs font-semibold text-gray-400">
                                                     <span>{new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                                     <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{blog.views}</span>
