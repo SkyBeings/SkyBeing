@@ -171,7 +171,10 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 const getGSTReport = asyncHandler(async (req, res) => {
     const { from, to } = req.query;
 
-    const query = {};
+    const query = {
+        isConfirmed: true,           // only confirmed orders
+        paymentStatus: { $ne: 'failed' }, // exclude failed payments
+    };
     if (from || to) {
         query.createdAt = {};
         if (from) query.createdAt.$gte = new Date(from);
