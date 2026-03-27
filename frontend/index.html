@@ -12,11 +12,21 @@
     preconnect: open TCP+TLS to these origins during HTML parse, BEFORE JS runs.
     This eliminates DNS lookup + handshake delay for the LCP banner image and API.
   -->
+  <!-- 
+    ── Critical API Preloads ──────────────────────────────────────────────
+    These tell the browser to start fetching data IMMEDIATELY upon seeing the HTML,
+    before main.jsx even downloads. This eliminates the "JS Gap" where the browser
+    is waiting for script parse/execution before knowing it needs banners.
+  -->
+  <link rel="preload" href="/api/v1/banners/active?page=home" as="fetch" crossorigin="anonymous" />
+  <link rel="preload" href="/api/v1/settings/maintenance" as="fetch" crossorigin="anonymous" />
+  <link rel="preload" href="/api/v1/users/me" as="fetch" crossorigin="anonymous" />
+
   <!-- Cloudinary: where all banner/product images are hosted -->
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
   <link rel="dns-prefetch" href="https://res.cloudinary.com" />
 
-  <!-- Google Fonts (if used via CSS @import) -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
