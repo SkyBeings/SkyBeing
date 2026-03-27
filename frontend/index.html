@@ -2,56 +2,81 @@
 <html lang="en">
 
 <head>
-  <!-- Google Tag Manager -->
-  <script>(function (w, d, s, l, i) {
-      w[l] = w[l] || []; w[l].push({
-        'gtm.start':
-          new Date().getTime(), event: 'gtm.js'
-      }); var f = d.getElementsByTagName(s)[0],
-        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-    })(window, document, 'script', 'dataLayer', 'GTM-W3WQH94D');</script>
-  <!-- End Google Tag Manager -->
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo-cropped.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SkyBeings</title>
-  <!-- Google Ads (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GOOGLE_ADS_ID%"></script>
+
+  <!--
+    ── Critical Resource Hints ──────────────────────────────────────────────
+    preconnect: open TCP+TLS to these origins during HTML parse, BEFORE JS runs.
+    This eliminates DNS lookup + handshake delay for the LCP banner image and API.
+  -->
+  <!-- Cloudinary: where all banner/product images are hosted -->
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+  <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
+  <!-- Google Fonts (if used via CSS @import) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Google Tag Manager: loaded async/deferred, NOT render-blocking -->
+  <script>
+    // Defer GTM until after the page has loaded to avoid blocking LCP/FCP
+    window.addEventListener('load', function () {
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || []; w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0], j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', 'GTM-W3WQH94D');
+    });
+  </script>
+
+  <!-- Google Ads (gtag.js): deferred until after load -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
-    gtag('config', '%VITE_GOOGLE_ADS_ID%');
+    window.addEventListener('load', function () {
+      var adsId = '%VITE_GOOGLE_ADS_ID%';
+      if (adsId && adsId !== '%VITE_GOOGLE_ADS_ID%') {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + adsId;
+        document.head.appendChild(s);
+        gtag('config', adsId);
+      }
+    });
   </script>
 
-  <!-- Meta Pixel Code -->
+  <!-- Meta Pixel: deferred until after load -->
   <script>
-    !function (f, b, e, v, n, t, s) {
-      if (f.fbq) return; n = f.fbq = function () {
-        n.callMethod ?
-          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-      };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-      n.queue = []; t = b.createElement(e); t.async = !0;
-      t.src = v; s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '298502654348777');
-    fbq('track', 'PageView');
+    window.addEventListener('load', function () {
+      !function (f, b, e, v, n, t, s) {
+        if (f.fbq) return; n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+        };
+        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+        n.queue = []; t = b.createElement(e); t.async = !0;
+        t.src = v; s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s)
+      }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '298502654348777');
+      fbq('track', 'PageView');
+    });
   </script>
-  <!-- End Meta Pixel Code -->
 </head>
 
 <body>
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3WQH94D" height="0" width="0"
       style="display:none;visibility:hidden"></iframe></noscript>
-  <!-- End Google Tag Manager (noscript) -->
-  <!-- Meta Pixel noscript fallback (must be in body, not head) -->
+  <!-- Meta Pixel noscript fallback -->
   <noscript><img height="1" width="1" style="display:none"
       src="https://www.facebook.com/tr?id=298502654348777&ev=PageView&noscript=1" /></noscript>
+
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

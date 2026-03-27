@@ -46,8 +46,6 @@ export const registerUser = createAsyncThunk(
     'auth/registerUser',
     async (userData, { rejectWithValue }) => {
         try {
-            // Create FormData if uploading an avatar, else JSON might be OK if configured.
-            // Based on standard Node/Express setups handling file uploads.
             const response = await api.post('/users/register', userData);
             return response.data.data;
         } catch (error) {
@@ -72,6 +70,10 @@ export const logoutUser = createAsyncThunk(
 const initialState = {
     user: null,
     isAuthenticated: false,
+    // 'isInitialized' becomes true once the first /users/me resolves (either way).
+    // Used by AdminRoute to avoid a flash-redirect before auth is known.
+    // Public pages do NOT depend on this — they render immediately.
+    isInitialized: false,
     status: 'idle',
     error: null,
 };
@@ -110,7 +112,6 @@ const authSlice = createSlice({
             })
             .addCase(registerUser.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                // Some APIs just login upon register
                 if (action.payload && action.payload.user) {
                     state.isAuthenticated = true;
                     state.user = action.payload.user;
@@ -145,24 +146,29 @@ const authSlice = createSlice({
                 localStorage.removeItem('accessToken');
             })
             // Fetch Current User (Persistent Login)
+            // NOTE: pending does NOT set status='loading' globally anymore,
+            // as that was used by App.jsx to block the entire render.
+            // We use isInitialized instead for the admin gate only.
             .addCase(fetchCurrentUser.pending, (state) => {
                 state.status = 'loading';
+                // isInitialized stays false until resolved
             })
             .addCase(fetchCurrentUser.fulfilled, (state, action) => {
                 state.status = 'succeeded';
+                state.isInitialized = true; // auth is now known
                 if (action.payload) {
                     state.isAuthenticated = true;
-                    state.user = action.payload; // user payload
+                    state.user = action.payload;
                 } else {
                     state.isAuthenticated = false;
                     state.user = null;
                 }
             })
-            .addCase(fetchCurrentUser.rejected, (state, action) => {
+            .addCase(fetchCurrentUser.rejected, (state) => {
                 state.status = 'failed';
+                state.isInitialized = true; // auth is now known: not logged in
                 state.isAuthenticated = false;
                 state.user = null;
-                // Don't show an explicit error on load failure due to 401s
             });
     }
 });

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
@@ -43,17 +43,33 @@ const ALL_SLOTS = MOSAIC_COLS.flatMap((col, ci) =>
 
 const GallerySection = () => {
     const [images, setImages] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // false = not yet triggered
+    const [fetched, setFetched] = useState(false);
+    const sectionRef = useRef(null);
 
     useEffect(() => {
-        api.get('/gallery/active')
-            .then(res => setImages(res.data?.data?.images || []))
-            .catch(() => setImages([]))
-            .finally(() => setLoading(false));
-    }, []);
+        // ── Defer fetch until section is ~200px from entering viewport ──────
+        // The gallery is at the bottom of the page — no need to fetch it on
+        // initial load. This removes /gallery/active from the critical path.
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && !fetched) {
+                    setFetched(true);
+                    setLoading(true);
+                    api.get('/gallery/active')
+                        .then(res => setImages(res.data?.data?.images || []))
+                        .catch(() => setImages([]))
+                        .finally(() => setLoading(false));
+                }
+            },
+            { rootMargin: '200px' } // start 200px before visible
+        );
+        if (sectionRef.current) observer.observe(sectionRef.current);
+        return () => observer.disconnect();
+    }, [fetched]);
 
     return (
-        <section className="bg-[#FAFAFA] py-16 text-center">
+        <section ref={sectionRef} className="bg-[#FAFAFA] py-16 text-center">
             <p className="text-gray-400 font-medium text-sm tracking-wider mb-2">
                 Get your bird friend at resting place to your window
             </p>
@@ -83,6 +99,8 @@ const GallerySection = () => {
                                             <img
                                                 src={img.imageUrl}
                                                 alt={img.caption || 'Gallery'}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                                             />
                                         </div>
@@ -112,6 +130,7 @@ const GallerySection = () => {
         </section>
     );
 };
+
 
 
 const Home = () => {
